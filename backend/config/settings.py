@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 
@@ -40,6 +41,15 @@ DATABASES = {}
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_TZ = True
+
+# The built React app (`npm run build`) is served by WhiteNoise from the site
+# root. Files under /assets/ have content hashes in their names, so browsers
+# may cache them forever.
+FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
+WHITENOISE_ROOT = FRONTEND_DIST
+WHITENOISE_INDEX_FILE = True
+WHITENOISE_USE_FINDERS = False
+WHITENOISE_IMMUTABLE_FILE_TEST = r"^/assets/"
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],

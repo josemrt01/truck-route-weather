@@ -19,7 +19,7 @@ function App() {
   return (
     <main className="app">
       <div className="map-container">
-        <MapView />
+        <MapView tripPlan={tripPlan} />
       </div>
 
       {/* Left panel over the map; stacks above the map on narrow screens (see App.css). */}

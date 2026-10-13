@@ -1,0 +1,15 @@
+"""Sample values shared by the tests."""
+
+from trips.types import Place
+
+# Downtown Dallas as (lon, lat); used as a route origin in tests.
+DALLAS_POINT = (-96.797, 32.7767)
+
+# Downtown Houston as (lon, lat); used as a route destination in tests.
+HOUSTON_POINT = (-95.3698, 29.7604)
+
+# Dallas as geocoding returns it; used where tests fake geocoding.
+DALLAS_PLACE = Place(label="Dallas, Texas", lat=32.7767, lon=-96.797)
+
+# Houston as geocoding returns it; used where tests fake geocoding.
+HOUSTON_PLACE = Place(label="Houston, Texas", lat=29.7604, lon=-95.3698)

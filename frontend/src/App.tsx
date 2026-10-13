@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { MapView } from './components/MapView'
 import './App.css'
 
 type BackendStatus = 'checking' | 'ok' | 'unreachable'
@@ -14,9 +15,12 @@ function App() {
   }, [])
 
   return (
-    <main>
-      <h1>Truck Route Weather</h1>
-      <p>Backend: {status}</p>
+    <main className="app">
+      <MapView />
+      <div className="status-badge">
+        <strong>Truck Route Weather</strong>
+        <span>Backend: {status}</span>
+      </div>
     </main>
   )
 }

@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react'
+import { getBackendStatus } from './api/healthApi'
 import { MapView } from './components/MapView'
+import { BackendStatus } from './types/backendStatus'
 import './App.css'
 
-type BackendStatus = 'checking' | 'ok' | 'unreachable'
-
 function App() {
-  const [status, setStatus] = useState<BackendStatus>('checking')
+  const [status, setStatus] = useState<BackendStatus>(BackendStatus.CHECKING)
 
+  // Check the backend once, when the page first loads.
   useEffect(() => {
-    fetch('/api/health')
-      .then((response) => response.json())
-      .then((data: { status: string }) => setStatus(data.status === 'ok' ? 'ok' : 'unreachable'))
-      .catch(() => setStatus('unreachable'))
+    getBackendStatus().then(setStatus)
   }, [])
 
   return (
     <main className="app">
       <MapView />
+
+      {/* Floating badge over the map's top-left corner. */}
       <div className="status-badge">
         <strong>Truck Route Weather</strong>
         <span>Backend: {status}</span>

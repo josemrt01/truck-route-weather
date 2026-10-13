@@ -1,13 +1,15 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
+// Django dev server that /api calls are forwarded to during `npm run dev`; used by the proxy below.
+const DJANGO_DEV_SERVER_URL = 'http://localhost:8000'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
-    // In development, forward API calls to the Django dev server.
     proxy: {
-      '/api': 'http://localhost:8000',
+      '/api': DJANGO_DEV_SERVER_URL,
     },
   },
 })

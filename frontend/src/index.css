@@ -1,7 +1,14 @@
 :root {
+  /* Main text color; used across the app. */
+  --color-text: #1f2328;
+  /* Background of the page and floating panels; used by :root and .status-badge. */
+  --color-surface: #ffffff;
+  /* Soft shadow for panels floating over the map; used by .status-badge. */
+  --shadow-floating-panel: 0 1px 4px rgba(0, 0, 0, 0.25);
+
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: #1f2328;
-  background: #ffffff;
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 * {

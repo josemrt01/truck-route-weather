@@ -19,7 +19,7 @@ export const ROUTE_LINE_WIDTH = 5
 // Milliseconds the camera takes to fly to a new route; used by MapView.
 export const FIT_ANIMATION_MS = 1000
 
-// Screens narrower than 768px, the same breakpoint as App.css; used by MapView to pick the fit padding.
+// Screens narrower than 768px, below Tailwind's md breakpoint; used by MapView to pick the fit padding.
 export const NARROW_SCREEN_QUERY = '(max-width: 767px)'
 
 // Pixels kept around the route when zooming to it, so the start and end pins aren't at the edge;

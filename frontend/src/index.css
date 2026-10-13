@@ -1,28 +1,29 @@
-:root {
-  /* Main text color; used across the app. */
-  --color-text: #1f2328;
-  /* Secondary text (status line, trip summary); used by App.css. */
-  --color-text-muted: #59636e;
-  /* Background of the page and floating panels; used by :root and .side-panel. */
+@import 'tailwindcss';
+
+/* Theme tokens; Tailwind turns each into classes (e.g. --color-error gives text-error and border-error). */
+@theme {
+  /* Main text color; used as text-foreground across the app. */
+  --color-foreground: #1f2328;
+  /* Secondary text (status line, trip summary); used as text-muted in App. */
+  --color-muted: #59636e;
+  /* Background of the page and floating panels; used as bg-surface. */
   --color-surface: #ffffff;
-  /* Input borders; used by .trip-form inputs. */
+  /* Input borders; used as border-border in PlaceField. */
   --color-border: #d1d9e0;
-  /* Main action color; used by the Plan route button. */
+  /* Main action color; used as bg-primary by the Plan route button. */
   --color-primary: #0969da;
-  /* Error text and invalid input borders; used by .field-error, .form-error and .trip-form. */
+  /* Error text and invalid input borders; used as text-error and border-error. */
   --color-error: #d1242f;
-  /* Soft shadow for panels floating over the map; used by .side-panel. */
+  /* Soft shadow for panels floating over the map; used as shadow-floating-panel by the side panel. */
   --shadow-floating-panel: 0 1px 4px rgba(0, 0, 0, 0.25);
-
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: var(--color-text);
-  background: var(--color-surface);
+  /* Shadow that lifts map pins off the route line; used as drop-shadow-map-pin in RouteEndpointMarker. */
+  --drop-shadow-map-pin: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
+/* Page-wide text and background colors. */
+@layer base {
+  body {
+    color: var(--color-foreground);
+    background: var(--color-surface);
+  }
 }

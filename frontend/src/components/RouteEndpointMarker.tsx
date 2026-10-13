@@ -20,9 +20,9 @@ export function RouteEndpointMarker({ place, endpoint }: RouteEndpointMarkerProp
   return (
     // anchor="bottom" puts the pin's tip, not its center, on the place.
     <Marker longitude={place.lon} latitude={place.lat} anchor="bottom">
-      {/* title shows the place name on hover. */}
+      {/* title shows the place name on hover; the drop shadow lifts the pin off the route line. */}
       <div
-        className="route-endpoint-marker"
+        className="flex cursor-default drop-shadow-map-pin"
         title={`${name}: ${place.label}`}
         role="img"
         aria-label={`${name}: ${place.label}`}

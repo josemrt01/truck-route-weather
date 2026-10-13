@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { getTripPlan } from '../api/tripPlanApi'
 import { NETWORK_ERROR_MESSAGE } from '../config/errorMessages'
 import { TripPlanError, TripPlanField, type TripPlan } from '../types/tripPlan'
+import { PlaceField } from './PlaceField'
 
 type TripFormProps = {
   // Called with the result after a successful plan; App stores it.
@@ -44,35 +45,43 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     if (error?.field === TripPlanField.DESTINATION) setError(null)
   }
 
+  // The error message for one field, or undefined when the error belongs elsewhere.
+  function getFieldError(field: TripPlanField): string | undefined {
+    return error?.field === field ? error.message : undefined
+  }
+
   return (
-    <form className="trip-form" onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit}>
       {/* Disabling the fieldset disables every input and the button while planning. */}
-      <fieldset disabled={isPlanning}>
-        <label htmlFor="origin-input">Origin</label>
-        <input
+      <fieldset disabled={isPlanning} className="flex flex-col gap-1.5">
+        <PlaceField
           id="origin-input"
+          label="Origin"
           value={origin}
           placeholder="Dallas, TX"
-          aria-invalid={error?.field === TripPlanField.ORIGIN}
-          onChange={(event) => updateOrigin(event.target.value)}
+          error={getFieldError(TripPlanField.ORIGIN)}
+          onChange={updateOrigin}
         />
-        {error?.field === TripPlanField.ORIGIN && <p className="field-error">{error.message}</p>}
 
-        <label htmlFor="destination-input">Destination</label>
-        <input
+        <PlaceField
           id="destination-input"
+          label="Destination"
           value={destination}
           placeholder="Houston, TX"
-          aria-invalid={error?.field === TripPlanField.DESTINATION}
-          onChange={(event) => updateDestination(event.target.value)}
+          error={getFieldError(TripPlanField.DESTINATION)}
+          onChange={updateDestination}
         />
-        {error?.field === TripPlanField.DESTINATION && <p className="field-error">{error.message}</p>}
 
-        <button type="submit">{isPlanning ? 'Planning…' : 'Plan route'}</button>
+        <button
+          type="submit"
+          className="mt-2 cursor-pointer rounded-md bg-primary p-2.5 font-semibold text-surface disabled:cursor-wait disabled:opacity-60"
+        >
+          {isPlanning ? 'Planning…' : 'Plan route'}
+        </button>
 
         {/* Errors not tied to one field: no road, routing service down, network. */}
         {error && error.field === null && (
-          <p className="form-error" role="alert">
+          <p className="text-error" role="alert">
             {error.message}
           </p>
         )}

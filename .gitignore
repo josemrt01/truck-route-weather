@@ -14,5 +14,6 @@ frontend/dist/
 # macOS
 .DS_Store
 
-# Local design notes (not part of the repository)
+# Local notes and assistant instructions (not part of the repository)
 docs/
+CLAUDE.md

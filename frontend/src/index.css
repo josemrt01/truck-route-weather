@@ -1,9 +1,17 @@
 :root {
   /* Main text color; used across the app. */
   --color-text: #1f2328;
-  /* Background of the page and floating panels; used by :root and .status-badge. */
+  /* Secondary text (status line, trip summary); used by App.css. */
+  --color-text-muted: #59636e;
+  /* Background of the page and floating panels; used by :root and .side-panel. */
   --color-surface: #ffffff;
-  /* Soft shadow for panels floating over the map; used by .status-badge. */
+  /* Input borders; used by .trip-form inputs. */
+  --color-border: #d1d9e0;
+  /* Main action color; used by the Plan route button. */
+  --color-primary: #0969da;
+  /* Error text and invalid input borders; used by .field-error, .form-error and .trip-form. */
+  --color-error: #d1242f;
+  /* Soft shadow for panels floating over the map; used by .side-panel. */
   --shadow-floating-panel: 0 1px 4px rgba(0, 0, 0, 0.25);
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

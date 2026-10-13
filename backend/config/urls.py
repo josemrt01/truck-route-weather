@@ -1,3 +1,7 @@
 """URL routes for the whole project."""
 
-urlpatterns = []
+from django.urls import include, path
+
+urlpatterns = [
+    path("api/", include("trips.urls")),
+]

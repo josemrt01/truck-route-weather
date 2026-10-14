@@ -14,6 +14,8 @@ export type Checkpoint = {
   lon: number
   // ISO time in UTC, e.g. "2026-10-13T13:24:00Z".
   eta_utc: string
+  // Index of the last route geometry point before this checkpoint; used to cut the route line at checkpoints.
+  previous_point_index: number
 }
 
 // Body of POST /api/trip-plans; matches TripPlanRequestSerializer in the backend.

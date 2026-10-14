@@ -132,3 +132,19 @@ def test_checkpoint_on_a_zero_length_segment_does_not_divide_by_zero():
 
     assert [checkpoint.mile for checkpoint in checkpoints] == pytest.approx([0, 25, 50])
     assert checkpoints[0].eta_utc == DEPARTURE_UTC
+
+
+def test_checkpoint_records_the_route_point_just_before_it():
+    # Route points at miles 0, 40 and 90. Miles 0 and 25 come after point 0; 50, 75 and the destination after point 1.
+    geometry = [(0.0, 0.0), (1.0, 0.0), (2.0, 1.0)]
+    progress = RouteProgress(miles_at=[0, 40, 90], seconds_at=[0, 2400, 6000])
+
+    checkpoints = build_checkpoints(geometry, progress, spacing_mi=25, departure_utc=DEPARTURE_UTC)
+
+    assert [(checkpoint.mile, checkpoint.previous_point_index) for checkpoint in checkpoints] == [
+        (0, 0),
+        (25, 0),
+        (50, 1),
+        (75, 1),
+        (90, 1),
+    ]

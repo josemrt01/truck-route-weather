@@ -59,6 +59,7 @@ def _serialize_checkpoint(checkpoint: Checkpoint) -> dict:
         "lat": round(checkpoint.lat, COORDINATE_DECIMALS),
         "lon": round(checkpoint.lon, COORDINATE_DECIMALS),
         "eta_utc": _format_utc(checkpoint.eta_utc),
+        "previous_point_index": checkpoint.previous_point_index,
     }
 
 

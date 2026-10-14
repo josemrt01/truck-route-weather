@@ -67,8 +67,21 @@ def test_returns_places_route_and_checkpoints():
 
     checkpoints = route["checkpoints"]
     assert [checkpoint["mile"] for checkpoint in checkpoints] == [0, 25, 50, 75, 100, 125, 150, 175, 200, 224.8]
-    assert checkpoints[0] == {"mile": 0.0, "lat": 32.7767, "lon": -96.797, "eta_utc": "2026-10-13T13:00:00Z"}
-    assert checkpoints[-1] == {"mile": 224.8, "lat": 29.7604, "lon": -95.3698, "eta_utc": "2026-10-13T16:27:00Z"}
+    # The fake route has only two points, so every checkpoint comes after point 0.
+    assert checkpoints[0] == {
+        "mile": 0.0,
+        "lat": 32.7767,
+        "lon": -96.797,
+        "eta_utc": "2026-10-13T13:00:00Z",
+        "previous_point_index": 0,
+    }
+    assert checkpoints[-1] == {
+        "mile": 224.8,
+        "lat": 29.7604,
+        "lon": -95.3698,
+        "eta_utc": "2026-10-13T16:27:00Z",
+        "previous_point_index": 0,
+    }
 
 
 def test_converts_departure_offset_to_utc():

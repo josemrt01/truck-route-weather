@@ -66,6 +66,7 @@ def build_checkpoints(
                 lat=_interpolate(start_lat, end_lat, fraction),
                 lon=_interpolate(start_lon, end_lon, fraction),
                 eta_utc=departure_utc + timedelta(seconds=elapsed_seconds),
+                previous_point_index=segment_index,
             )
         )
 

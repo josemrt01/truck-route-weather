@@ -52,3 +52,6 @@ class Checkpoint:
     lat: float
     lon: float
     eta_utc: datetime
+    # Index of the last route geometry point before this checkpoint; lets the frontend cut the route line
+    # into stretches between checkpoints.
+    previous_point_index: int

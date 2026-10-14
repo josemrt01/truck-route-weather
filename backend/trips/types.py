@@ -16,9 +16,20 @@ class Place:
 
 
 @dataclass(frozen=True)
+class TimeInterval:
+    """Driving time for the stretch of route between two geometry indexes; returned inside Route."""
+
+    start_index: int
+    end_index: int
+    seconds: float
+
+
+@dataclass(frozen=True)
 class Route:
     """A driving route; returned by graphhopper_client, used by trip_plan_service."""
 
     geometry: list[LonLat]
     distance_m: float
     time_s: float
+    # Time per stretch of road, so slow roads get more time than highways; used to build checkpoint ETAs.
+    time_intervals: list[TimeInterval]

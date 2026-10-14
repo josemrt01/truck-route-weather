@@ -5,13 +5,16 @@ from django.conf import settings
 
 from trips.constants import COUNTRY_CODE, HTTP_TIMEOUT_SECONDS, ROUTING_PROFILE
 from trips.exceptions import GraphHopperError, RoutingError
-from trips.types import LonLat, Place, Route
+from trips.types import LonLat, Place, Route, TimeInterval
 
 # Language of place names in geocoding results; used by get_coordinates_from_text.
 GEOCODING_LOCALE = "en"
 
 # Matches requested before keeping the first one in COUNTRY_CODE; used by get_coordinates_from_text.
 GEOCODING_RESULT_LIMIT = 10
+
+# GraphHopper reports durations in milliseconds; used by get_route to convert to seconds.
+MILLISECONDS_PER_SECOND = 1000
 
 
 def get_coordinates_from_text(text: str) -> Place | None:
@@ -41,6 +44,8 @@ def get_route(origin: LonLat, destination: LonLat) -> Route:
             ("points_encoded", "false"),
             # Turn-by-turn directions aren't needed, only the line.
             ("instructions", "false"),
+            # Driving time per stretch of road, used to time each checkpoint.
+            ("details", "time"),
         ],
     )
 
@@ -51,13 +56,29 @@ def get_route(origin: LonLat, destination: LonLat) -> Route:
     # The first path is the fastest one.
     path = paths[0]
 
+    # Keep only lon and lat; some responses add elevation as a third value.
+    geometry = [(lon, lat) for lon, lat, *_ in path["points"]["coordinates"]]
+    time_s = path["time"] / MILLISECONDS_PER_SECOND
+
     return Route(
-        # Keep only lon and lat; some responses add elevation as a third value.
-        geometry=[(lon, lat) for lon, lat, *_ in path["points"]["coordinates"]],
+        geometry=geometry,
         distance_m=path["distance"],
-        # GraphHopper gives milliseconds.
-        time_s=path["time"] / 1000,
+        time_s=time_s,
+        time_intervals=_get_time_intervals(path, geometry, time_s),
     )
+
+
+def _get_time_intervals(path: dict, geometry: list[LonLat], time_s: float) -> list[TimeInterval]:
+    time_details = path.get("details", {}).get("time", [])
+
+    # Without details, treat the whole route as one stretch at its average speed.
+    if not time_details:
+        return [TimeInterval(start_index=0, end_index=len(geometry) - 1, seconds=time_s)]
+
+    return [
+        TimeInterval(start_index=start_index, end_index=end_index, seconds=milliseconds / MILLISECONDS_PER_SECOND)
+        for start_index, end_index, milliseconds in time_details
+    ]
 
 
 def _get_json(path: str, params: list[tuple[str, str]]) -> dict:

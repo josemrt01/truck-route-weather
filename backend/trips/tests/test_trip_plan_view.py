@@ -5,7 +5,7 @@ from trips.error_messages import NO_DRIVABLE_ROUTE, PLACE_NOT_FOUND
 from trips.exceptions import GraphHopperError, RoutingError
 from trips.services import trip_plan_service
 from trips.tests.test_data import DALLAS_PLACE, HOUSTON_PLACE
-from trips.types import Route
+from trips.types import Route, TimeInterval
 
 # Text typed in the form mapped to the place geocoding returns; used by the fake geocoder below.
 PLACES_BY_TEXT = {"Dallas, TX": DALLAS_PLACE, "Houston, TX": HOUSTON_PLACE}
@@ -18,7 +18,10 @@ def fake_graphhopper(monkeypatch):
         trip_plan_service,
         "get_route",
         lambda origin, destination: Route(
-            geometry=[origin, destination], distance_m=385_000, time_s=12_420.4
+            geometry=[origin, destination],
+            distance_m=385_000,
+            time_s=12_420.4,
+            time_intervals=[TimeInterval(start_index=0, end_index=1, seconds=12_420.4)],
         ),
     )
 

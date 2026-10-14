@@ -5,7 +5,7 @@ from django.conf import settings
 from trips.clients.graphhopper_client import get_coordinates_from_text, get_route
 from trips.exceptions import GraphHopperError, RoutingError
 from trips.tests.test_data import DALLAS_PLACE, DALLAS_POINT, HOUSTON_POINT
-from trips.types import Route
+from trips.types import Route, TimeInterval
 
 
 @responses.activate
@@ -35,7 +35,40 @@ def test_get_coordinates_from_text_returns_none_without_us_results():
 
 
 @responses.activate
-def test_get_route_returns_geometry_distance_and_time():
+def test_get_route_returns_geometry_distance_time_and_time_intervals():
+    responses.get(
+        f"{settings.GRAPHHOPPER_BASE_URL}/route",
+        json={
+            "paths": [
+                {
+                    "distance": 385000.5,
+                    "time": 13020000,
+                    "points": {"coordinates": [list(DALLAS_POINT), [-96.0, 31.0], list(HOUSTON_POINT)]},
+                    # GraphHopper time details: [from_index, to_index, milliseconds].
+                    "details": {"time": [[0, 1, 7020000], [1, 2, 6000000]]},
+                }
+            ]
+        },
+    )
+
+    route = get_route(DALLAS_POINT, HOUSTON_POINT)
+
+    assert route == Route(
+        geometry=[DALLAS_POINT, (-96.0, 31.0), HOUSTON_POINT],
+        distance_m=385000.5,
+        time_s=13020.0,
+        time_intervals=[
+            TimeInterval(start_index=0, end_index=1, seconds=7020.0),
+            TimeInterval(start_index=1, end_index=2, seconds=6000.0),
+        ],
+    )
+    # GraphHopper expects "lat,lon" for each point.
+    assert "point=32.7767%2C-96.797" in responses.calls[0].request.url
+    assert responses.calls[0].request.params["details"] == "time"
+
+
+@responses.activate
+def test_get_route_uses_one_time_interval_when_details_are_missing():
     responses.get(
         f"{settings.GRAPHHOPPER_BASE_URL}/route",
         json={
@@ -51,13 +84,7 @@ def test_get_route_returns_geometry_distance_and_time():
 
     route = get_route(DALLAS_POINT, HOUSTON_POINT)
 
-    assert route == Route(
-        geometry=[DALLAS_POINT, (-96.0, 31.0), HOUSTON_POINT],
-        distance_m=385000.5,
-        time_s=13020.0,
-    )
-    # GraphHopper expects "lat,lon" for each point.
-    assert "point=32.7767%2C-96.797" in responses.calls[0].request.url
+    assert route.time_intervals == [TimeInterval(start_index=0, end_index=2, seconds=13020.0)]
 
 
 @responses.activate

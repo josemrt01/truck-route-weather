@@ -71,3 +71,15 @@ class HourlyForecast:
     rain_in: list[float]
     # Snowfall in inches per hour.
     snow_in: list[float]
+
+
+@dataclass(frozen=True)
+class WeatherHour:
+    """Weather for one point at one hour; returned by weather_lookup, used by the risk calculator."""
+
+    wind_gust_mph: float
+    wind_speed_mph: float
+    # Rain plus showers, in inches per hour.
+    rain_in: float
+    # Snowfall in inches per hour.
+    snow_in: float

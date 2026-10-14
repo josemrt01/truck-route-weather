@@ -5,17 +5,16 @@ from datetime import UTC, datetime
 
 from trips.clients.graphhopper_client import get_coordinates_from_text, get_route
 from trips.clients.open_meteo_client import get_hourly_forecasts
+from trips.constants import MILE_DECIMALS
 from trips.exceptions import PlaceNotFoundError
 from trips.logic.checkpoint_builder import build_checkpoints, build_route_progress
 from trips.logic.risk_calculator import calculate_risk
+from trips.logic.risk_summary_builder import build_risk_summary
 from trips.logic.weather_lookup import get_weather_at, round_to_nearest_hour
-from trips.types import AssessedCheckpoint, Checkpoint, Place
+from trips.types import AssessedCheckpoint, Checkpoint, Place, RiskLevel
 
 # Decimal places kept for checkpoint coordinates (about 1 meter); keeps the JSON small.
 COORDINATE_DECIMALS = 5
-
-# Decimal places kept for miles in the response.
-MILE_DECIMALS = 1
 
 
 def create_trip_plan(
@@ -34,6 +33,7 @@ def create_trip_plan(
 
     # Look up the weather at each checkpoint's arrival time and rate the risk for this truck.
     assessed_checkpoints = _assess_checkpoints(checkpoints, weight_lb)
+    risk_summary = build_risk_summary(assessed_checkpoints)
 
     # Shape the JSON the frontend receives; distance is our own measured total, so it matches the last checkpoint.
     return {
@@ -46,6 +46,9 @@ def create_trip_plan(
             "duration_s": round(progress.seconds_at[-1]),
             # The last checkpoint is the destination, so its ETA is the arrival time.
             "arrival_utc": _format_utc(checkpoints[-1].eta_utc),
+            "miles_by_level": _serialize_miles_by_level(risk_summary.miles_by_level),
+            "avg_risk": risk_summary.avg_risk,
+            "worst_level": risk_summary.worst_level.value,
             "checkpoints": [_serialize_checkpoint(assessed_checkpoint) for assessed_checkpoint in assessed_checkpoints],
         },
     }
@@ -106,6 +109,11 @@ def _serialize_checkpoint(assessed_checkpoint: AssessedCheckpoint) -> dict:
         "level": assessed_checkpoint.risk.level.value,
         "cause": assessed_checkpoint.risk.cause.value,
     }
+
+
+def _serialize_miles_by_level(miles_by_level: dict[RiskLevel, float]) -> dict[str, float]:
+    # Level names as JSON keys: RiskLevel.NO_TRAVEL -> "no_travel".
+    return {level.name.lower(): miles for level, miles in miles_by_level.items()}
 
 
 def _format_utc(moment: datetime) -> str:

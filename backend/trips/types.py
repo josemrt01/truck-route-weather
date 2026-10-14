@@ -124,3 +124,14 @@ class AssessedCheckpoint:
     forecast_hour_utc: datetime
     weather: WeatherHour
     risk: RiskAssessment
+
+
+@dataclass(frozen=True)
+class RouteRiskSummary:
+    """Risk totals for a whole route; returned by risk_summary_builder."""
+
+    # Miles driven at each level; every level is present, 0.0 when unused.
+    miles_by_level: dict[RiskLevel, float]
+    # Mileage-weighted average level, from 0.00 (all Low) to 4.00 (all No Travel).
+    avg_risk: float
+    worst_level: RiskLevel

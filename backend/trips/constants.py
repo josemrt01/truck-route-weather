@@ -20,6 +20,9 @@ HEALTH_STATUS_OK = "ok"
 # Mean radius of the Earth in miles; used by geo_math to measure distances between points.
 EARTH_RADIUS_MI = 3958.8
 
+# Decimal places kept for miles; used by trip_plan_service and risk_summary_builder.
+MILE_DECIMALS = 1
+
 # Allowed miles between checkpoints; the spacing the user picks must be one of these; used by TripPlanRequestSerializer.
 CHECKPOINT_SPACING_CHOICES_MI = (10, 25, 50)
 

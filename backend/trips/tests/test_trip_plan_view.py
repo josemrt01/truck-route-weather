@@ -85,6 +85,10 @@ def test_returns_places_route_and_checkpoints():
     assert route["duration_s"] == 12420
     # 13:00 + 12,420.4 seconds (3 h 27 min 0.4 s).
     assert route["arrival_utc"] == "2026-10-13T16:27:00Z"
+    # The fake weather makes every checkpoint Severe, so the whole route is Severe.
+    assert route["miles_by_level"] == {"low": 0.0, "moderate": 0.0, "high": 0.0, "severe": 224.8, "no_travel": 0.0}
+    assert route["avg_risk"] == 3.0
+    assert route["worst_level"] == 3
 
     checkpoints = route["checkpoints"]
     assert [checkpoint["mile"] for checkpoint in checkpoints] == [0, 25, 50, 75, 100, 125, 150, 175, 200, 224.8]

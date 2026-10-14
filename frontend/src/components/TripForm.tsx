@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { getTripPlan } from '../api/tripPlanApi'
 import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '../config/checkpointConfig'
 import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
+import { DEFAULT_TRUCK_WEIGHT_LB } from '../config/truckConfig'
 import { convertDateTimeLocalToIso, getDateTimeLocalValue } from '../lib/dateTime'
 import { TripPlanError, TripPlanField, type TripPlan } from '../types/tripPlan'
 import { FormField } from './FormField'
@@ -20,6 +21,8 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
   // Starts at the current local time; useState runs this function only on the first render.
   const [departureLocal, setDepartureLocal] = useState(() => getDateTimeLocalValue(new Date()))
   const [spacingMi, setSpacingMi] = useState<number>(DEFAULT_CHECKPOINT_SPACING_MI)
+  // Kept as the typed text, so clearing the box while editing doesn't turn into NaN.
+  const [weightText, setWeightText] = useState(String(DEFAULT_TRUCK_WEIGHT_LB))
   const [isPlanning, setIsPlanning] = useState(false)
   const [error, setError] = useState<TripPlanError | null>(null)
 
@@ -35,6 +38,8 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
         destination: destination.trim(),
         departure: convertDateTimeLocalToIso(departureLocal),
         spacing_mi: spacingMi,
+        // An empty box becomes 0, which the backend rejects with a message under the field.
+        weight_lb: Number(weightText),
       })
       onTripPlanned(tripPlan)
     } catch (caughtError) {
@@ -124,6 +129,21 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
               </option>
             ))}
           </select>
+        </FormField>
+
+        <FormField id="weight-input" label="Truck weight (lb)" error={getFieldError(TripPlanField.WEIGHT_LB)}>
+          <input
+            id="weight-input"
+            type="number"
+            inputMode="numeric"
+            value={weightText}
+            aria-invalid={Boolean(getFieldError(TripPlanField.WEIGHT_LB))}
+            onChange={(event) => {
+              setWeightText(event.target.value)
+              clearErrorFor(TripPlanField.WEIGHT_LB)
+            }}
+            className={FORM_CONTROL_CLASS_NAME}
+          />
         </FormField>
 
         <button

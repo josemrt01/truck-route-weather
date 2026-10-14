@@ -3,7 +3,12 @@ from datetime import UTC, timedelta
 from django.utils import timezone
 from rest_framework import serializers
 
-from trips.constants import CHECKPOINT_SPACING_CHOICES_MI, MAX_DEPARTURE_FUTURE, MAX_DEPARTURE_PAST
+from trips.constants import (
+    CHECKPOINT_SPACING_CHOICES_MI,
+    MAX_DEPARTURE_FUTURE,
+    MAX_DEPARTURE_PAST,
+    MAX_TRUCK_WEIGHT_LB,
+)
 
 
 class TimezoneAwareDateTimeField(serializers.DateTimeField):
@@ -22,6 +27,16 @@ class TripPlanRequestSerializer(serializers.Serializer):
     destination = serializers.CharField(max_length=200)
     departure = TimezoneAwareDateTimeField()
     spacing_mi = serializers.ChoiceField(choices=CHECKPOINT_SPACING_CHOICES_MI)
+    # Whole pounds; a minimum of 1 means "more than 0".
+    weight_lb = serializers.IntegerField(
+        min_value=1,
+        max_value=MAX_TRUCK_WEIGHT_LB,
+        error_messages={
+            "min_value": "Weight must be more than 0 lb.",
+            # ":," adds thousands separators: 80000 -> "80,000".
+            "max_value": f"Weight can't be more than {MAX_TRUCK_WEIGHT_LB:,} lb.",
+        },
+    )
 
     def validate_departure(self, departure):
         now = timezone.now()

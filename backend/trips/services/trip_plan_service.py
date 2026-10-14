@@ -15,7 +15,9 @@ COORDINATE_DECIMALS = 5
 MILE_DECIMALS = 1
 
 
-def create_trip_plan(origin_text: str, destination_text: str, departure_utc: datetime, spacing_mi: int) -> dict:
+def create_trip_plan(
+    origin_text: str, destination_text: str, departure_utc: datetime, spacing_mi: int, weight_lb: int
+) -> dict:
     # Turn the typed place names into coordinates.
     origin = _get_place_or_raise(origin_text, field="origin")
     destination = _get_place_or_raise(destination_text, field="destination")

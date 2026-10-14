@@ -22,6 +22,7 @@ class TripPlanView(APIView):
             serializer.validated_data["destination"],
             serializer.validated_data["departure"],
             serializer.validated_data["spacing_mi"],
+            serializer.validated_data["weight_lb"],
         )
 
         return Response(trip_plan)

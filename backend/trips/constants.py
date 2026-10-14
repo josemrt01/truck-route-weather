@@ -23,6 +23,9 @@ EARTH_RADIUS_MI = 3958.8
 # Allowed miles between checkpoints; the spacing the user picks must be one of these; used by TripPlanRequestSerializer.
 CHECKPOINT_SPACING_CHOICES_MI = (10, 25, 50)
 
+# Heaviest truck allowed on US interstates (federal gross weight limit); used by TripPlanRequestSerializer.
+MAX_TRUCK_WEIGHT_LB = 80_000
+
 # How far in the past a departure may be (allows for slow form filling); used by TripPlanRequestSerializer.
 MAX_DEPARTURE_PAST = timedelta(minutes=15)
 

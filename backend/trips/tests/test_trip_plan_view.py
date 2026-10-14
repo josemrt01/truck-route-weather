@@ -13,7 +13,13 @@ from trips.types import Route, TimeInterval
 PLACES_BY_TEXT = {"Dallas, TX": DALLAS_PLACE, "Houston, TX": HOUSTON_PLACE}
 
 # A request that passes validation; tests copy it and change one field.
-VALID_BODY = {"origin": "Dallas, TX", "destination": "Houston, TX", "departure": DEPARTURE_ISO, "spacing_mi": 25}
+VALID_BODY = {
+    "origin": "Dallas, TX",
+    "destination": "Houston, TX",
+    "departure": DEPARTURE_ISO,
+    "spacing_mi": 25,
+    "weight_lb": 45_000,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -123,6 +129,8 @@ def test_accepts_departure_on_window_edges(departure):
         ({key: value for key, value in VALID_BODY.items() if key != "departure"}, "departure"),
         ({key: value for key, value in VALID_BODY.items() if key != "spacing_mi"}, "spacing_mi"),
         ({**VALID_BODY, "spacing_mi": 30}, "spacing_mi"),
+        ({key: value for key, value in VALID_BODY.items() if key != "weight_lb"}, "weight_lb"),
+        ({**VALID_BODY, "weight_lb": "heavy"}, "weight_lb"),
     ],
 )
 def test_rejects_invalid_input(body, field):
@@ -130,6 +138,27 @@ def test_rejects_invalid_input(body, field):
 
     assert response.status_code == 400
     assert response.json()["field"] == field
+
+
+@pytest.mark.parametrize(
+    ("weight_lb", "error"),
+    [
+        (0, "Weight must be more than 0 lb."),
+        (80_001, "Weight can't be more than 80,000 lb."),
+    ],
+)
+def test_rejects_weight_outside_allowed_range(weight_lb, error):
+    response = post_trip_plan({**VALID_BODY, "weight_lb": weight_lb})
+
+    assert response.status_code == 400
+    assert response.json() == {"error": error, "field": "weight_lb"}
+
+
+@pytest.mark.parametrize("weight_lb", [1, 80_000])
+def test_accepts_weight_on_range_edges(weight_lb):
+    response = post_trip_plan({**VALID_BODY, "weight_lb": weight_lb})
+
+    assert response.status_code == 200
 
 
 def test_reports_unknown_place_on_its_field():

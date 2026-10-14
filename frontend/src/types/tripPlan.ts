@@ -25,6 +25,7 @@ export type TripPlanRequest = {
   // ISO time with a timezone offset, e.g. "2026-10-13T13:00:00.000Z".
   departure: string
   spacing_mi: number
+  weight_lb: number
 }
 
 // Response of POST /api/trip-plans; matches create_trip_plan in the backend.
@@ -47,6 +48,7 @@ export const TripPlanField = {
   DESTINATION: 'destination',
   DEPARTURE: 'departure',
   SPACING_MI: 'spacing_mi',
+  WEIGHT_LB: 'weight_lb',
 } as const
 
 export type TripPlanField = (typeof TripPlanField)[keyof typeof TripPlanField]

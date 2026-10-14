@@ -1,8 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { getTripPlan } from '../api/tripPlanApi'
+import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '../config/checkpointConfig'
 import { NETWORK_ERROR_MESSAGE } from '../config/errorMessages'
+import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
+import { convertDateTimeLocalToIso, getDateTimeLocalValue } from '../lib/dateTime'
 import { TripPlanError, TripPlanField, type TripPlan } from '../types/tripPlan'
-import { PlaceField } from './PlaceField'
+import { FormField } from './FormField'
+
+// Field names the form has an input for; an error on any other field is shown as a general error.
+const FORM_FIELDS: readonly string[] = Object.values(TripPlanField)
 
 type TripFormProps = {
   // Called with the result after a successful plan; App stores it.
@@ -12,6 +18,9 @@ type TripFormProps = {
 export function TripForm({ onTripPlanned }: TripFormProps) {
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
+  // Starts at the current local time; useState runs this function only on the first render.
+  const [departureLocal, setDepartureLocal] = useState(() => getDateTimeLocalValue(new Date()))
+  const [spacingMi, setSpacingMi] = useState<number>(DEFAULT_CHECKPOINT_SPACING_MI)
   const [isPlanning, setIsPlanning] = useState(false)
   const [error, setError] = useState<TripPlanError | null>(null)
 
@@ -22,7 +31,12 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     setIsPlanning(true)
 
     try {
-      const tripPlan = await getTripPlan(origin.trim(), destination.trim())
+      const tripPlan = await getTripPlan({
+        origin: origin.trim(),
+        destination: destination.trim(),
+        departure: convertDateTimeLocalToIso(departureLocal),
+        spacing_mi: spacingMi,
+      })
       onTripPlanned(tripPlan)
     } catch (caughtError) {
       setError(caughtError instanceof TripPlanError ? caughtError : new TripPlanError(NETWORK_ERROR_MESSAGE, null))
@@ -31,18 +45,9 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     }
   }
 
-  function updateOrigin(text: string) {
-    setOrigin(text)
-
-    // The user is fixing this field, so its old error no longer applies.
-    if (error?.field === TripPlanField.ORIGIN) setError(null)
-  }
-
-  function updateDestination(text: string) {
-    setDestination(text)
-
-    // The user is fixing this field, so its old error no longer applies.
-    if (error?.field === TripPlanField.DESTINATION) setError(null)
+  // The user is changing this field, so its old error no longer applies.
+  function clearErrorFor(field: TripPlanField) {
+    if (error?.field === field) setError(null)
   }
 
   // The error message for one field, or undefined when the error belongs elsewhere.
@@ -50,27 +55,75 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     return error?.field === field ? error.message : undefined
   }
 
+  // Errors with no field, or on a field this form has no input for, show under the button.
+  const generalError = error && (error.field === null || !FORM_FIELDS.includes(error.field)) ? error.message : null
+
   return (
     <form onSubmit={handleSubmit}>
       {/* Disabling the fieldset disables every input and the button while planning. */}
       <fieldset disabled={isPlanning} className="flex flex-col gap-1.5">
-        <PlaceField
-          id="origin-input"
-          label="Origin"
-          value={origin}
-          placeholder="Dallas, TX"
-          error={getFieldError(TripPlanField.ORIGIN)}
-          onChange={updateOrigin}
-        />
+        <FormField id="origin-input" label="Origin" error={getFieldError(TripPlanField.ORIGIN)}>
+          <input
+            id="origin-input"
+            value={origin}
+            placeholder="Dallas, TX"
+            aria-invalid={Boolean(getFieldError(TripPlanField.ORIGIN))}
+            onChange={(event) => {
+              setOrigin(event.target.value)
+              clearErrorFor(TripPlanField.ORIGIN)
+            }}
+            className={FORM_CONTROL_CLASS_NAME}
+          />
+        </FormField>
 
-        <PlaceField
-          id="destination-input"
-          label="Destination"
-          value={destination}
-          placeholder="Houston, TX"
-          error={getFieldError(TripPlanField.DESTINATION)}
-          onChange={updateDestination}
-        />
+        <FormField id="destination-input" label="Destination" error={getFieldError(TripPlanField.DESTINATION)}>
+          <input
+            id="destination-input"
+            value={destination}
+            placeholder="Houston, TX"
+            aria-invalid={Boolean(getFieldError(TripPlanField.DESTINATION))}
+            onChange={(event) => {
+              setDestination(event.target.value)
+              clearErrorFor(TripPlanField.DESTINATION)
+            }}
+            className={FORM_CONTROL_CLASS_NAME}
+          />
+        </FormField>
+
+        <FormField id="departure-input" label="Departure" error={getFieldError(TripPlanField.DEPARTURE)}>
+          {/* The browser shows a date and time picker in the user's local time. */}
+          <input
+            id="departure-input"
+            type="datetime-local"
+            value={departureLocal}
+            aria-invalid={Boolean(getFieldError(TripPlanField.DEPARTURE))}
+            onChange={(event) => {
+              setDepartureLocal(event.target.value)
+              clearErrorFor(TripPlanField.DEPARTURE)
+            }}
+            className={FORM_CONTROL_CLASS_NAME}
+          />
+        </FormField>
+
+        <FormField id="spacing-input" label="Checkpoint every" error={getFieldError(TripPlanField.SPACING_MI)}>
+          <select
+            id="spacing-input"
+            value={spacingMi}
+            aria-invalid={Boolean(getFieldError(TripPlanField.SPACING_MI))}
+            onChange={(event) => {
+              // Select values are always text, so turn it back into a number.
+              setSpacingMi(Number(event.target.value))
+              clearErrorFor(TripPlanField.SPACING_MI)
+            }}
+            className={FORM_CONTROL_CLASS_NAME}
+          >
+            {CHECKPOINT_SPACING_OPTIONS_MI.map((spacingOption) => (
+              <option key={spacingOption} value={spacingOption}>
+                {spacingOption} mi
+              </option>
+            ))}
+          </select>
+        </FormField>
 
         <button
           type="submit"
@@ -79,10 +132,10 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
           {isPlanning ? 'Planning…' : 'Plan route'}
         </button>
 
-        {/* Errors not tied to one field: no road, routing service down, network. */}
-        {error && error.field === null && (
+        {/* Errors not tied to one input: no road, routing service down, network. */}
+        {generalError && (
           <p className="text-error" role="alert">
-            {error.message}
+            {generalError}
           </p>
         )}
       </fieldset>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getBackendStatus } from './api/healthApi'
 import { MapView } from './components/MapView'
 import { TripForm } from './components/TripForm'
-import { formatDistance, formatDuration } from './lib/formatters'
+import { formatDistance, formatDuration, formatEta } from './lib/formatters'
 import { BackendStatus } from './types/backendStatus'
 import type { TripPlan } from './types/tripPlan'
 
@@ -32,7 +32,7 @@ function App() {
         {tripPlan && (
           <p className="text-muted">
             {tripPlan.origin.label} → {tripPlan.destination.label} · {formatDistance(tripPlan.route.distance_mi)} ·{' '}
-            {formatDuration(tripPlan.route.duration_s)}
+            {formatDuration(tripPlan.route.duration_s)} · Arrives {formatEta(tripPlan.route.arrival_utc)}
           </p>
         )}
       </aside>

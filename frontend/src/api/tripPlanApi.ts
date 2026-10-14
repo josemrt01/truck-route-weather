@@ -1,12 +1,12 @@
 import axios from 'axios'
 import { API_ROUTES } from '../config/apiRoutes'
 import { NETWORK_ERROR_MESSAGE } from '../config/errorMessages'
-import { TripPlanError, type ApiErrorResponse, type TripPlan } from '../types/tripPlan'
+import { TripPlanError, type ApiErrorResponse, type TripPlan, type TripPlanRequest } from '../types/tripPlan'
 import { apiClient } from './apiClient'
 
-export async function getTripPlan(origin: string, destination: string): Promise<TripPlan> {
+export async function getTripPlan(request: TripPlanRequest): Promise<TripPlan> {
   try {
-    const response = await apiClient.post<TripPlan>(API_ROUTES.TRIP_PLANS, { origin, destination })
+    const response = await apiClient.post<TripPlan>(API_ROUTES.TRIP_PLANS, request)
     return response.data
   } catch (error) {
     // The backend answered with our {error, field} shape: pass its message on to the form.

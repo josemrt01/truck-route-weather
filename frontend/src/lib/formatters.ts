@@ -14,3 +14,10 @@ export function formatDuration(seconds: number): string {
 
   return hours > 0 ? `${hours} h ${minutes} min` : `${minutes} min`
 }
+
+// Short weekday and time in the browser's local timezone, e.g. "Tue 4:26 PM"; used for arrival times.
+const ETA_FORMAT = new Intl.DateTimeFormat(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+
+export function formatEta(isoUtc: string): string {
+  return ETA_FORMAT.format(new Date(isoUtc))
+}

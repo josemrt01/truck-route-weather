@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Map, { Layer, NavigationControl, Popup, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre'
+import { LngLatBounds } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import {
   CHECKPOINT_DOT_COLOR,
@@ -23,7 +24,7 @@ import {
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
 import { formatEta } from '../lib/formatters'
-import { buildCheckpointPoints, buildRouteSegments, getRouteBounds } from '../lib/routeGeometry'
+import { buildCheckpointPoints, buildRouteSegments } from '../lib/routeGeometry'
 import { RouteEndpoint } from '../types/routeEndpoint'
 import type { TripPlan } from '../types/tripPlan'
 import { RouteEndpointMarker } from './RouteEndpointMarker'
@@ -74,7 +75,14 @@ export function MapView({ tripPlan }: MapViewProps) {
     const isNarrowScreen = window.matchMedia(NARROW_SCREEN_QUERY).matches
     const padding = isNarrowScreen ? ROUTE_FIT_PADDING_NARROW : ROUTE_FIT_PADDING
 
-    mapRef.current.fitBounds(getRouteBounds(tripPlan.route.geometry), {
+    // Start a box at the first route point and grow it until it contains every point.
+    const [firstPoint, ...otherPoints] = tripPlan.route.geometry
+    const routeBounds = otherPoints.reduce(
+      (bounds, point) => bounds.extend(point),
+      new LngLatBounds(firstPoint, firstPoint),
+    )
+
+    mapRef.current.fitBounds(routeBounds, {
       padding,
       maxZoom: MAX_ROUTE_FIT_ZOOM,
       duration: FIT_ANIMATION_MS,

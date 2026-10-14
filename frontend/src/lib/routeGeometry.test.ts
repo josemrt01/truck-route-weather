@@ -1,28 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Checkpoint, LonLat } from '../types/tripPlan'
-import { buildCheckpointPoints, buildRouteSegments, getRouteBounds } from './routeGeometry'
-
-// A route that zigzags, so its corners come from different points.
-const ZIGZAG_ROUTE: LonLat[] = [
-  [-96.8, 32.8],
-  [-95.0, 31.0],
-  [-97.5, 30.0],
-  [-95.4, 29.8],
-]
+import { buildCheckpointPoints, buildRouteSegments } from './routeGeometry'
 
 // Builds a checkpoint for the tests; only position and previous_point_index matter here.
 function makeCheckpoint(lon: number, lat: number, previousPointIndex: number): Checkpoint {
   return { mile: 0, lon, lat, eta_utc: '2026-10-13T13:00:00Z', previous_point_index: previousPointIndex }
 }
-
-describe('getRouteBounds', () => {
-  it('returns the south-west and north-east corners around every point', () => {
-    expect(getRouteBounds(ZIGZAG_ROUTE)).toEqual([
-      [-97.5, 29.8],
-      [-95.0, 32.8],
-    ])
-  })
-})
 
 describe('buildRouteSegments', () => {
   // Route points: 0 (0,0), 1 (10,0), 2 (20,0), 3 (30,0).

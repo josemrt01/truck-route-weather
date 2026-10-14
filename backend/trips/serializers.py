@@ -1,10 +1,9 @@
-from datetime import UTC
+from datetime import UTC, timedelta
 
 from django.utils import timezone
 from rest_framework import serializers
 
 from trips.constants import CHECKPOINT_SPACING_CHOICES_MI, MAX_DEPARTURE_FUTURE, MAX_DEPARTURE_PAST
-from trips.error_messages import DEPARTURE_NEEDS_TIMEZONE, DEPARTURE_TOO_EARLY, DEPARTURE_TOO_LATE
 
 
 class TimezoneAwareDateTimeField(serializers.DateTimeField):
@@ -13,7 +12,7 @@ class TimezoneAwareDateTimeField(serializers.DateTimeField):
     def enforce_timezone(self, value):
         # DRF would quietly treat a time without an offset as UTC, which is wrong for a user in Texas.
         if timezone.is_naive(value):
-            raise serializers.ValidationError(DEPARTURE_NEEDS_TIMEZONE)
+            raise serializers.ValidationError("Departure time must include a timezone.")
 
         return value.astimezone(UTC)
 
@@ -28,9 +27,11 @@ class TripPlanRequestSerializer(serializers.Serializer):
         now = timezone.now()
 
         if departure < now - MAX_DEPARTURE_PAST:
-            raise serializers.ValidationError(DEPARTURE_TOO_EARLY)
+            # Dividing by one minute turns the allowed window into a whole number of minutes.
+            past_minutes = MAX_DEPARTURE_PAST // timedelta(minutes=1)
+            raise serializers.ValidationError(f"Departure can't be more than {past_minutes} minutes in the past.")
 
         if departure > now + MAX_DEPARTURE_FUTURE:
-            raise serializers.ValidationError(DEPARTURE_TOO_LATE)
+            raise serializers.ValidationError(f"Departure must be within the next {MAX_DEPARTURE_FUTURE.days} days.")
 
         return departure

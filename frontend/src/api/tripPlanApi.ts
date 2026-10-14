@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { API_ROUTES } from '../config/apiRoutes'
-import { NETWORK_ERROR_MESSAGE } from '../config/errorMessages'
 import { TripPlanError, type ApiErrorResponse, type TripPlan, type TripPlanRequest } from '../types/tripPlan'
 import { apiClient } from './apiClient'
 
@@ -16,6 +15,6 @@ export async function getTripPlan(request: TripPlanRequest): Promise<TripPlan> {
     }
 
     // No answer (network down, timeout) or an unexpected body: show a general message.
-    throw new TripPlanError(NETWORK_ERROR_MESSAGE, null)
+    throw new TripPlanError("Couldn't reach the server. Check your connection and try again.", null)
   }
 }

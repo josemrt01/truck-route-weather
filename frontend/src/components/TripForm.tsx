@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { getTripPlan } from '../api/tripPlanApi'
 import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '../config/checkpointConfig'
-import { NETWORK_ERROR_MESSAGE } from '../config/errorMessages'
 import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
 import { convertDateTimeLocalToIso, getDateTimeLocalValue } from '../lib/dateTime'
 import { TripPlanError, TripPlanField, type TripPlan } from '../types/tripPlan'
@@ -39,7 +38,9 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
       })
       onTripPlanned(tripPlan)
     } catch (caughtError) {
-      setError(caughtError instanceof TripPlanError ? caughtError : new TripPlanError(NETWORK_ERROR_MESSAGE, null))
+      // getTripPlan only throws TripPlanError; anything else is an unexpected bug in our own code.
+      const unexpectedError = new TripPlanError('Something went wrong. Please try again.', null)
+      setError(caughtError instanceof TripPlanError ? caughtError : unexpectedError)
     } finally {
       setIsPlanning(false)
     }

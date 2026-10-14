@@ -7,7 +7,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
-from trips.error_messages import NO_DRIVABLE_ROUTE, REQUEST_FAILED, ROUTING_SERVICE_UNAVAILABLE
 from trips.exceptions import GraphHopperError, PlaceNotFoundError, RoutingError
 
 logger = logging.getLogger(__name__)
@@ -25,17 +24,20 @@ def handle_api_exception(exc, context):
 
     # The places exist but no road connects them.
     if isinstance(exc, RoutingError):
-        return _build_error_response(NO_DRIVABLE_ROUTE, status.HTTP_400_BAD_REQUEST)
+        return _build_error_response("No drivable route found between these places.", status.HTTP_400_BAD_REQUEST)
 
     # GraphHopper failed: log the details for us, show a generic message to the user.
     if isinstance(exc, GraphHopperError):
         logger.error("GraphHopper failure: %s", exc)
-        return _build_error_response(ROUTING_SERVICE_UNAVAILABLE, status.HTTP_503_SERVICE_UNAVAILABLE)
+        return _build_error_response(
+            "The routing service is unavailable. Please try again in a minute.",
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
     # Anything else (e.g. 405 method not allowed): let DRF build it, then reshape it to our format.
     response = drf_exception_handler(exc, context)
     if response is not None:
-        response.data = {"error": str(response.data.get("detail", REQUEST_FAILED)), "field": None}
+        response.data = {"error": str(response.data.get("detail", "Request failed.")), "field": None}
 
     return response
 

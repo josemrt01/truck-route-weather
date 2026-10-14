@@ -4,13 +4,6 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from trips.error_messages import (
-    DEPARTURE_NEEDS_TIMEZONE,
-    DEPARTURE_TOO_EARLY,
-    DEPARTURE_TOO_LATE,
-    NO_DRIVABLE_ROUTE,
-    PLACE_NOT_FOUND,
-)
 from trips.exceptions import GraphHopperError, RoutingError
 from trips.services import trip_plan_service
 from trips.tests.test_data import DALLAS_PLACE, DEPARTURE_ISO, FIXED_NOW, HOUSTON_PLACE
@@ -95,14 +88,14 @@ def test_rejects_departure_without_timezone():
     response = post_trip_plan({**VALID_BODY, "departure": "2026-10-13T08:00:00"})
 
     assert response.status_code == 400
-    assert response.json() == {"error": DEPARTURE_NEEDS_TIMEZONE, "field": "departure"}
+    assert response.json() == {"error": "Departure time must include a timezone.", "field": "departure"}
 
 
 @pytest.mark.parametrize(
     ("departure", "error"),
     [
-        (FIXED_NOW - timedelta(minutes=16), DEPARTURE_TOO_EARLY),
-        (FIXED_NOW + timedelta(days=7, minutes=1), DEPARTURE_TOO_LATE),
+        (FIXED_NOW - timedelta(minutes=16), "Departure can't be more than 15 minutes in the past."),
+        (FIXED_NOW + timedelta(days=7, minutes=1), "Departure must be within the next 7 days."),
     ],
 )
 def test_rejects_departure_outside_allowed_window(departure, error):
@@ -144,7 +137,7 @@ def test_reports_unknown_place_on_its_field():
 
     assert response.status_code == 400
     assert response.json() == {
-        "error": PLACE_NOT_FOUND.format(place="Atlantis"),
+        "error": "Couldn't find 'Atlantis'. Try a city and state.",
         "field": "destination",
     }
 
@@ -158,7 +151,7 @@ def test_reports_routing_error_as_bad_request(monkeypatch):
     response = post_trip_plan(VALID_BODY)
 
     assert response.status_code == 400
-    assert response.json()["error"] == NO_DRIVABLE_ROUTE
+    assert response.json()["error"] == "No drivable route found between these places."
 
 
 def test_reports_graphhopper_failure_as_service_unavailable(monkeypatch):

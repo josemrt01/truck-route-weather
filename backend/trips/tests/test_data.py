@@ -1,5 +1,7 @@
 """Sample values shared by the tests."""
 
+from datetime import UTC, datetime
+
 from trips.types import Place
 
 # Downtown Dallas as (lon, lat); used as a route origin in tests.
@@ -13,3 +15,6 @@ DALLAS_PLACE = Place(label="Dallas, Texas", lat=32.7767, lon=-96.797)
 
 # Houston as geocoding returns it; used where tests fake geocoding.
 HOUSTON_PLACE = Place(label="Houston, Texas", lat=29.7604, lon=-95.3698)
+
+# A fixed departure in UTC; used by checkpoint tests so ETAs are predictable.
+DEPARTURE_UTC = datetime(2026, 10, 13, 13, 0, tzinfo=UTC)

@@ -1,5 +1,7 @@
 """Constants shared across the trips app."""
 
+from datetime import timedelta
+
 # Only places in this country are accepted; used by graphhopper_client geocoding.
 COUNTRY_CODE = "US"
 
@@ -17,3 +19,12 @@ HEALTH_STATUS_OK = "ok"
 
 # Mean radius of the Earth in miles; used by geo_math to measure distances between points.
 EARTH_RADIUS_MI = 3958.8
+
+# Allowed miles between checkpoints; the spacing the user picks must be one of these; used by TripPlanRequestSerializer.
+CHECKPOINT_SPACING_CHOICES_MI = (10, 25, 50)
+
+# How far in the past a departure may be (allows for slow form filling); used by TripPlanRequestSerializer.
+MAX_DEPARTURE_PAST = timedelta(minutes=15)
+
+# How far ahead a departure may be (weather forecasts only reach so far); used by TripPlanRequestSerializer.
+MAX_DEPARTURE_FUTURE = timedelta(days=7)

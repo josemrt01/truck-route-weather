@@ -77,7 +77,7 @@ def _get_target_miles(total_miles: float, spacing_mi: float) -> list[float]:
     spacing_count = 0
     target_miles = []
     while spacing_count * spacing_mi < total_miles:
-        target_miles.append(spacing_count * spacing_mi)
+        target_miles.append(float(spacing_count * spacing_mi))
         spacing_count += 1
 
     # The destination is always a checkpoint, even when it's closer than spacing_mi to the previous one.

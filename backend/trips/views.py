@@ -20,6 +20,8 @@ class TripPlanView(APIView):
         trip_plan = create_trip_plan(
             serializer.validated_data["origin"],
             serializer.validated_data["destination"],
+            serializer.validated_data["departure"],
+            serializer.validated_data["spacing_mi"],
         )
 
         return Response(trip_plan)

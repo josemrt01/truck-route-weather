@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import IntEnum, StrEnum
 
 # A point as (longitude, latitude), the order GeoJSON and MapLibre use; used for all coordinates.
 LonLat = tuple[float, float]
@@ -83,3 +84,32 @@ class WeatherHour:
     rain_in: float
     # Snowfall in inches per hour.
     snow_in: float
+
+
+class RiskLevel(IntEnum):
+    """How dangerous the weather is for the truck; numbers so levels can be compared and averaged."""
+
+    LOW = 0
+    MODERATE = 1
+    HIGH = 2
+    SEVERE = 3
+    NO_TRAVEL = 4
+
+
+class RiskCause(StrEnum):
+    """Which condition produced a risk level; sent to the frontend as plain text."""
+
+    NONE = "none"
+    WIND = "wind"
+    # Wind made worse because the truck is heavy.
+    WIND_LOAD_RULE = "wind_load_rule"
+    RAIN = "rain"
+    SNOW = "snow"
+
+
+@dataclass(frozen=True)
+class RiskAssessment:
+    """Risk level and its cause for one point at one hour; returned by risk_calculator."""
+
+    level: RiskLevel
+    cause: RiskCause

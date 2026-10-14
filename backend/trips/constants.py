@@ -14,3 +14,6 @@ METERS_PER_MILE = 1609.344
 
 # Status the health endpoint returns when the backend is up; used by HealthView (the frontend checks it).
 HEALTH_STATUS_OK = "ok"
+
+# Mean radius of the Earth in miles; used by geo_math to measure distances between points.
+EARTH_RADIUS_MI = 3958.8

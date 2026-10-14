@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
-from trips.exceptions import GraphHopperError, PlaceNotFoundError, RoutingError
+from trips.exceptions import GraphHopperError, PlaceNotFoundError, RoutingError, WeatherServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,14 @@ def handle_api_exception(exc, context):
         logger.error("GraphHopper failure: %s", exc)
         return _build_error_response(
             "The routing service is unavailable. Please try again in a minute.",
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    # Open-Meteo failed: same idea as GraphHopper, details in the log, generic message to the user.
+    if isinstance(exc, WeatherServiceError):
+        logger.error("Open-Meteo failure: %s", exc)
+        return _build_error_response(
+            "The weather service is unavailable. Please try again in a minute.",
             status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 

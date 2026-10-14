@@ -55,3 +55,19 @@ class Checkpoint:
     # Index of the last route geometry point before this checkpoint; lets the frontend cut the route line
     # into stretches between checkpoints.
     previous_point_index: int
+
+
+@dataclass(frozen=True)
+class HourlyForecast:
+    """Hour-by-hour weather for one point; returned by open_meteo_client.
+
+    Every list holds one value per hour, and index 0 is first_hour_utc.
+    """
+
+    first_hour_utc: datetime
+    wind_gust_mph: list[float]
+    wind_speed_mph: list[float]
+    # Rain plus showers, in inches per hour.
+    rain_in: list[float]
+    # Snowfall in inches per hour.
+    snow_in: list[float]

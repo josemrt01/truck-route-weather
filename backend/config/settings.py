@@ -77,6 +77,8 @@ WHITENOISE_IMMUTABLE_FILE_TEST = r"^/assets/"
 GRAPHHOPPER_API_KEY = os.environ.get("GRAPHHOPPER_API_KEY", "")
 # Base URL of the GraphHopper API; used by graphhopper_client.
 GRAPHHOPPER_BASE_URL = "https://graphhopper.com/api/1"
+# Base URL of the Open-Meteo weather API (no key needed); used by open_meteo_client.
+OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1"
 
 # Django REST Framework: JSON only, no logins, and our own error format.
 REST_FRAMEWORK = {

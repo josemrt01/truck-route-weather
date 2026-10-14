@@ -5,6 +5,10 @@ class GraphHopperError(Exception):
     """GraphHopper is not configured, unreachable, or failing."""
 
 
+class WeatherServiceError(Exception):
+    """Open-Meteo is unreachable or failing."""
+
+
 class RoutingError(Exception):
     """GraphHopper could not find a drivable route for the given points."""
 

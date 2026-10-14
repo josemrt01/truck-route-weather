@@ -64,9 +64,7 @@ def _build_hourly_forecast(hourly: dict) -> HourlyForecast:
         wind_speed_mph=_replace_missing_with_zero(hourly["wind_speed_10m"]),
         # Open-Meteo splits rain into steady rain and showers; the risk rules count both.
         # Rounded so float noise (0.07 + 0.03 = 0.0999...) can't drop a value below a risk threshold.
-        rain_in=[
-            round(rain_hour + showers_hour, RAIN_DECIMALS) for rain_hour, showers_hour in zip(rain, showers, strict=True)
-        ],
+        rain_in=[round(rain[index] + showers[index], RAIN_DECIMALS) for index in range(len(rain))],
         snow_in=_replace_missing_with_zero(hourly["snowfall"]),
     )
 
@@ -85,4 +83,8 @@ def _get_json(params: dict[str, str]) -> dict | list:
     if not response.ok:
         raise WeatherServiceError(f"Open-Meteo answered with status {response.status_code}.")
 
-    return response.json()
+    # Open-Meteo sometimes reports its own timeouts as status 200 with a plain-text body.
+    try:
+        return response.json()
+    except ValueError:
+        raise WeatherServiceError(f"Open-Meteo sent a response that isn't JSON: {response.text[:100]}") from None

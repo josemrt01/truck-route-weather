@@ -113,3 +113,14 @@ class RiskAssessment:
 
     level: RiskLevel
     cause: RiskCause
+
+
+@dataclass(frozen=True)
+class AssessedCheckpoint:
+    """A checkpoint with the weather the truck meets there and its risk; built by trip_plan_service."""
+
+    checkpoint: Checkpoint
+    # The forecast hour whose weather was used (the full hour nearest the ETA).
+    forecast_hour_utc: datetime
+    weather: WeatherHour
+    risk: RiskAssessment

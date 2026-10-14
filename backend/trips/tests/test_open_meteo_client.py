@@ -109,6 +109,19 @@ def test_get_hourly_forecasts_raises_weather_service_error_on_server_failure():
 
 
 @responses.activate
+def test_get_hourly_forecasts_raises_weather_service_error_when_body_is_not_json():
+    # Seen live: Open-Meteo reports its own timeout as status 200 with a plain-text body.
+    responses.get(
+        f"{settings.OPEN_METEO_BASE_URL}/forecast",
+        status=200,
+        body="Unexpected error while streaming data: timeoutReached",
+    )
+
+    with pytest.raises(WeatherServiceError, match="isn't JSON: Unexpected error"):
+        get_forecasts([DALLAS_POINT])
+
+
+@responses.activate
 def test_get_hourly_forecasts_raises_weather_service_error_when_unreachable():
     responses.get(f"{settings.OPEN_METEO_BASE_URL}/forecast", body=requests.ConnectionError())
 

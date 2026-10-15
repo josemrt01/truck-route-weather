@@ -1,6 +1,6 @@
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson'
 import type { RiskLevel } from '../types/risk'
-import type { Checkpoint, LonLat } from '../types/tripPlan'
+import type { Checkpoint, LonLat, RoutePlan } from '../types/tripPlan'
 
 // Properties on each route stretch feature; index N is the stretch from checkpoint N to checkpoint N+1,
 // and level is the risk level that colors it.
@@ -53,4 +53,29 @@ export function getWorseCheckpoint(start: Checkpoint, end: Checkpoint): Checkpoi
   }
 
   return start
+}
+
+// Properties on each unselected route line; id is "A", "B" or "C".
+export type OtherRouteProperties = { id: string }
+
+// One line per route except the selected one; drawn gray under the selected route.
+export function buildOtherRouteLines(
+  routes: RoutePlan[],
+  selectedRouteId: string,
+): FeatureCollection<LineString, OtherRouteProperties> {
+  const features: Feature<LineString, OtherRouteProperties>[] = []
+
+  for (const route of routes) {
+    if (route.id === selectedRouteId) {
+      continue
+    }
+
+    features.push({
+      type: 'Feature',
+      properties: { id: route.id },
+      geometry: { type: 'LineString', coordinates: route.geometry },
+    })
+  }
+
+  return { type: 'FeatureCollection', features }
 }

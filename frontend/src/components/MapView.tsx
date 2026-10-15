@@ -12,6 +12,10 @@ import {
   MAP_STYLE_URL,
   MAX_ROUTE_FIT_ZOOM,
   NARROW_SCREEN_QUERY,
+  OTHER_ROUTE_COLOR,
+  OTHER_ROUTE_WIDTH,
+  OTHER_ROUTES_LAYER_ID,
+  OTHER_ROUTES_SOURCE_ID,
   ROUTE_FIT_PADDING,
   ROUTE_CASING_COLOR,
   ROUTE_CASING_LAYER_ID,
@@ -25,7 +29,7 @@ import {
   ROUTE_SEGMENT_SOURCE_ID,
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
-import { buildCheckpointPoints, buildRouteSegments } from '../lib/routeGeometry'
+import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments } from '../lib/routeGeometry'
 import { getRouteById } from '../lib/tripPlanRoutes'
 import { RouteEndpoint } from '../types/routeEndpoint'
 import type { TripPlan } from '../types/tripPlan'
@@ -43,8 +47,9 @@ const INTERACTIVE_LAYER_IDS = [ROUTE_SEGMENT_LAYER_ID]
 
 // A clicked route stretch and where the click was, so the popup opens there.
 type SelectedSegment = {
-  // The plan this stretch belongs to; a new plan hides the popup of the old one.
+  // The plan and route this stretch belongs to; a new plan or another selected route hides the popup.
   tripPlan: TripPlan
+  routeId: string
   index: number
   lon: number
   lat: number
@@ -53,16 +58,17 @@ type SelectedSegment = {
 type MapViewProps = {
   // The planned trip to draw; null before the first plan.
   tripPlan: TripPlan | null
+  // The route drawn with risk colors ("A", "B" or "C"); the others are drawn gray.
+  selectedRouteId: string | null
 }
 
-export function MapView({ tripPlan }: MapViewProps) {
+export function MapView({ tripPlan, selectedRouteId }: MapViewProps) {
   // Handle to the MapLibre map, so we can move its camera.
   const mapRef = useRef<MapRef>(null)
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
   const [selectedSegment, setSelectedSegment] = useState<SelectedSegment | null>(null)
 
-  // The route drawn with risk colors; the recommended one until route selection exists (step 5.5).
-  const selectedRoute = tripPlan ? getRouteById(tripPlan, tripPlan.recommended_route_id) : null
+  const selectedRoute = tripPlan && selectedRouteId ? getRouteById(tripPlan, selectedRouteId) : null
 
   // Rebuild the map data only when the route changes, not on every render.
   const routeSegments = useMemo(
@@ -73,31 +79,38 @@ export function MapView({ tripPlan }: MapViewProps) {
     () => (selectedRoute ? buildCheckpointPoints(selectedRoute.checkpoints) : null),
     [selectedRoute],
   )
+  const otherRouteLines = useMemo(
+    () => (tripPlan && selectedRouteId ? buildOtherRouteLines(tripPlan.routes, selectedRouteId) : null),
+    [tripPlan, selectedRouteId],
+  )
 
-  // Fly the camera so the whole new route is visible.
+  // Fly the camera so every route of a new plan is visible; selecting another route doesn't move it.
   useEffect(() => {
-    if (!selectedRoute || !mapRef.current) return
+    if (!tripPlan || !mapRef.current) return
 
     // On narrow screens the panel sits above the map, so the route needs no extra space on the left.
     const isNarrowScreen = window.matchMedia(NARROW_SCREEN_QUERY).matches
     const padding = isNarrowScreen ? ROUTE_FIT_PADDING_NARROW : ROUTE_FIT_PADDING
 
-    // Start a box at the first route point and grow it until it contains every point.
-    const [firstPoint, ...otherPoints] = selectedRoute.geometry
-    const routeBounds = otherPoints.reduce(
-      (bounds, point) => bounds.extend(point),
-      new LngLatBounds(firstPoint, firstPoint),
-    )
+    // Start a box at the first point, then grow it until it contains every point of every route.
+    const firstPoint = tripPlan.routes[0].geometry[0]
+    const allRoutesBounds = new LngLatBounds(firstPoint, firstPoint)
+    for (const route of tripPlan.routes) {
+      for (const point of route.geometry) {
+        allRoutesBounds.extend(point)
+      }
+    }
 
-    mapRef.current.fitBounds(routeBounds, {
+    mapRef.current.fitBounds(allRoutesBounds, {
       padding,
       maxZoom: MAX_ROUTE_FIT_ZOOM,
       duration: FIT_ANIMATION_MS,
     })
-  }, [selectedRoute])
+  }, [tripPlan])
 
-  // A popup left over from an older plan is hidden instead of reset, so no effect is needed.
-  const visibleSegment = selectedSegment?.tripPlan === tripPlan ? selectedSegment : null
+  // A popup left over from an older plan or another route is hidden instead of reset, so no effect is needed.
+  const visibleSegment =
+    selectedSegment?.tripPlan === tripPlan && selectedSegment.routeId === selectedRouteId ? selectedSegment : null
   const highlightedSegmentIndex = hoveredSegmentIndex ?? visibleSegment?.index ?? NO_SEGMENT_INDEX
 
   function handleMouseMove(event: MapLayerMouseEvent) {
@@ -110,12 +123,18 @@ export function MapView({ tripPlan }: MapViewProps) {
     const segmentIndex = event.features?.[0]?.properties?.index
 
     // A click on empty map closes the popup.
-    if (!tripPlan || typeof segmentIndex !== 'number') {
+    if (!tripPlan || !selectedRouteId || typeof segmentIndex !== 'number') {
       setSelectedSegment(null)
       return
     }
 
-    setSelectedSegment({ tripPlan, index: segmentIndex, lon: event.lngLat.lng, lat: event.lngLat.lat })
+    setSelectedSegment({
+      tripPlan,
+      routeId: selectedRouteId,
+      index: segmentIndex,
+      lon: event.lngLat.lng,
+      lat: event.lngLat.lat,
+    })
   }
 
   // The two checkpoints at the ends of the clicked stretch.
@@ -138,7 +157,19 @@ export function MapView({ tripPlan }: MapViewProps) {
       {/* Zoom +/- buttons and compass. */}
       <NavigationControl position="top-right" />
 
-      {/* Layers draw in the order listed: dark outline, risk-colored stretches, the highlight, then the dots on top. */}
+      {/* Layers draw in the order listed: gray other routes, then the selected route's dark outline,
+          risk-colored stretches and highlight, then the dots on top. */}
+      {otherRouteLines && (
+        <Source id={OTHER_ROUTES_SOURCE_ID} type="geojson" data={otherRouteLines}>
+          <Layer
+            id={OTHER_ROUTES_LAYER_ID}
+            type="line"
+            layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+            paint={{ 'line-color': OTHER_ROUTE_COLOR, 'line-width': OTHER_ROUTE_WIDTH }}
+          />
+        </Source>
+      )}
+
       {routeSegments && (
         <Source id={ROUTE_SEGMENT_SOURCE_ID} type="geojson" data={routeSegments}>
           <Layer

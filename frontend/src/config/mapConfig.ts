@@ -17,6 +17,18 @@ export const ROUTE_SEGMENT_LAYER_ID = 'route-segments-line'
 // Layer that draws the hovered or selected stretch on top, thicker; used by MapView.
 export const ROUTE_SEGMENT_HIGHLIGHT_LAYER_ID = 'route-segment-highlight'
 
+// Name of the unselected route lines inside MapLibre; used by MapView.
+export const OTHER_ROUTES_SOURCE_ID = 'other-routes'
+
+// Layer that draws the unselected routes as thin gray lines under the selected route; used by MapView.
+export const OTHER_ROUTES_LAYER_ID = 'other-routes-line'
+
+// Color of the unselected routes, a neutral gray apart from the risk colors; used by MapView.
+export const OTHER_ROUTE_COLOR = '#6e7781'
+
+// Thickness in pixels of the unselected routes, thinner than the selected one; used by MapView.
+export const OTHER_ROUTE_WIDTH = 4
+
 // Name of the checkpoint points inside MapLibre; used by MapView.
 export const CHECKPOINT_SOURCE_ID = 'checkpoints'
 

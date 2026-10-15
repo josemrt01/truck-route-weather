@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RiskCause, RiskLevel } from '../types/risk'
-import type { Checkpoint, LonLat } from '../types/tripPlan'
-import { buildCheckpointPoints, buildRouteSegments, getWorseCheckpoint } from './routeGeometry'
+import type { Checkpoint, LonLat, RoutePlan } from '../types/tripPlan'
+import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments, getWorseCheckpoint } from './routeGeometry'
 
 // Builds a checkpoint for the tests; position, previous_point_index and level matter, the weather is calm.
 function makeCheckpoint(
@@ -107,5 +107,54 @@ describe('buildCheckpointPoints', () => {
       [-96.8, 32.8],
       [-95.4, 29.8],
     ])
+  })
+})
+
+// Builds a route for the tests; only the id and geometry matter here.
+function makeRoute(id: string, geometry: LonLat[]): RoutePlan {
+  return {
+    id,
+    rank: 1,
+    geometry,
+    distance_mi: 0,
+    duration_s: 0,
+    arrival_utc: '2026-10-13T16:27:00Z',
+    miles_by_level: { low: 0, moderate: 0, high: 0, severe: 0, no_travel: 0 },
+    avg_risk: 0,
+    worst_level: RiskLevel.LOW,
+    checkpoints: [],
+  }
+}
+
+describe('buildOtherRouteLines', () => {
+  const routeA = makeRoute('A', [
+    [0, 0],
+    [10, 0],
+  ])
+  const routeB = makeRoute('B', [
+    [0, 0],
+    [5, 5],
+    [10, 0],
+  ])
+  const routeC = makeRoute('C', [
+    [0, 0],
+    [5, -5],
+    [10, 0],
+  ])
+
+  it('makes one line per route except the selected one', () => {
+    const lines = buildOtherRouteLines([routeA, routeB, routeC], 'B')
+
+    expect(lines.features.map((feature) => feature.properties.id)).toEqual(['A', 'C'])
+  })
+
+  it("uses each route's own geometry", () => {
+    const lines = buildOtherRouteLines([routeA, routeB, routeC], 'B')
+
+    expect(lines.features[1].geometry.coordinates).toEqual(routeC.geometry)
+  })
+
+  it('is empty when the only route is the selected one', () => {
+    expect(buildOtherRouteLines([routeA], 'A').features).toEqual([])
   })
 })

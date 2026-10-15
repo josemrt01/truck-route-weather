@@ -26,6 +26,7 @@ import {
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
 import { buildCheckpointPoints, buildRouteSegments } from '../lib/routeGeometry'
+import { getRouteById } from '../lib/tripPlanRoutes'
 import { RouteEndpoint } from '../types/routeEndpoint'
 import type { TripPlan } from '../types/tripPlan'
 import { RiskLegend } from './RiskLegend'
@@ -60,26 +61,29 @@ export function MapView({ tripPlan }: MapViewProps) {
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
   const [selectedSegment, setSelectedSegment] = useState<SelectedSegment | null>(null)
 
-  // Rebuild the map data only when the plan changes, not on every render.
+  // The route drawn with risk colors; the recommended one until route selection exists (step 5.5).
+  const selectedRoute = tripPlan ? getRouteById(tripPlan, tripPlan.recommended_route_id) : null
+
+  // Rebuild the map data only when the route changes, not on every render.
   const routeSegments = useMemo(
-    () => (tripPlan ? buildRouteSegments(tripPlan.route.geometry, tripPlan.route.checkpoints) : null),
-    [tripPlan],
+    () => (selectedRoute ? buildRouteSegments(selectedRoute.geometry, selectedRoute.checkpoints) : null),
+    [selectedRoute],
   )
   const checkpointPoints = useMemo(
-    () => (tripPlan ? buildCheckpointPoints(tripPlan.route.checkpoints) : null),
-    [tripPlan],
+    () => (selectedRoute ? buildCheckpointPoints(selectedRoute.checkpoints) : null),
+    [selectedRoute],
   )
 
   // Fly the camera so the whole new route is visible.
   useEffect(() => {
-    if (!tripPlan || !mapRef.current) return
+    if (!selectedRoute || !mapRef.current) return
 
     // On narrow screens the panel sits above the map, so the route needs no extra space on the left.
     const isNarrowScreen = window.matchMedia(NARROW_SCREEN_QUERY).matches
     const padding = isNarrowScreen ? ROUTE_FIT_PADDING_NARROW : ROUTE_FIT_PADDING
 
     // Start a box at the first route point and grow it until it contains every point.
-    const [firstPoint, ...otherPoints] = tripPlan.route.geometry
+    const [firstPoint, ...otherPoints] = selectedRoute.geometry
     const routeBounds = otherPoints.reduce(
       (bounds, point) => bounds.extend(point),
       new LngLatBounds(firstPoint, firstPoint),
@@ -90,7 +94,7 @@ export function MapView({ tripPlan }: MapViewProps) {
       maxZoom: MAX_ROUTE_FIT_ZOOM,
       duration: FIT_ANIMATION_MS,
     })
-  }, [tripPlan])
+  }, [selectedRoute])
 
   // A popup left over from an older plan is hidden instead of reset, so no effect is needed.
   const visibleSegment = selectedSegment?.tripPlan === tripPlan ? selectedSegment : null
@@ -115,8 +119,8 @@ export function MapView({ tripPlan }: MapViewProps) {
   }
 
   // The two checkpoints at the ends of the clicked stretch.
-  const segmentStart = visibleSegment ? visibleSegment.tripPlan.route.checkpoints[visibleSegment.index] : null
-  const segmentEnd = visibleSegment ? visibleSegment.tripPlan.route.checkpoints[visibleSegment.index + 1] : null
+  const segmentStart = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index] : null
+  const segmentEnd = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index + 1] : null
 
   return (
     <Map

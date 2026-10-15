@@ -3,12 +3,15 @@ import { getBackendStatus } from './api/healthApi'
 import { MapView } from './components/MapView'
 import { TripForm } from './components/TripForm'
 import { formatDistance, formatDuration, formatEta } from './lib/formatters'
+import { getRouteById } from './lib/tripPlanRoutes'
 import { BackendStatus } from './types/backendStatus'
 import type { TripPlan } from './types/tripPlan'
 
 function App() {
   const [status, setStatus] = useState<BackendStatus>(BackendStatus.CHECKING)
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null)
+  // Summarized below the form until the route cards exist (step 5.6).
+  const recommendedRoute = tripPlan ? getRouteById(tripPlan, tripPlan.recommended_route_id) : null
 
   // Check the backend once, when the page first loads.
   useEffect(() => {
@@ -29,10 +32,11 @@ function App() {
         <TripForm onTripPlanned={setTripPlan} />
 
         {/* Temporary summary until the map draws the route and the route cards exist. */}
-        {tripPlan && (
+        {tripPlan && recommendedRoute && (
           <p className="text-muted">
-            {tripPlan.origin.label} → {tripPlan.destination.label} · {formatDistance(tripPlan.route.distance_mi)} ·{' '}
-            {formatDuration(tripPlan.route.duration_s)} · Arrives {formatEta(tripPlan.route.arrival_utc)}
+            {tripPlan.origin.label} → {tripPlan.destination.label} · Route {recommendedRoute.id} ·{' '}
+            {formatDistance(recommendedRoute.distance_mi)} · {formatDuration(recommendedRoute.duration_s)} · Arrives{' '}
+            {formatEta(recommendedRoute.arrival_utc)}
           </p>
         )}
       </aside>

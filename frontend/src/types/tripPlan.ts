@@ -47,22 +47,37 @@ export type TripPlanRequest = {
   weight_lb: number
 }
 
+// One route option in the plan; matches _serialize_route in the backend.
+export type RoutePlan = {
+  // "A", "B" or "C", from fastest to slowest.
+  id: string
+  // Position in the recommendation; 1 is the recommended route.
+  rank: number
+  geometry: LonLat[]
+  distance_mi: number
+  duration_s: number
+  arrival_utc: string
+  miles_by_level: MilesByLevel
+  // Mileage-weighted average level, from 0 (all Low) to 4 (all No Travel).
+  avg_risk: number
+  worst_level: RiskLevel
+  checkpoints: Checkpoint[]
+}
+
 // Response of POST /api/trip-plans; matches create_trip_plan in the backend.
 export type TripPlan = {
   origin: Place
   destination: Place
   departure_utc: string
-  route: {
-    geometry: LonLat[]
-    distance_mi: number
-    duration_s: number
-    arrival_utc: string
-    miles_by_level: MilesByLevel
-    // Mileage-weighted average level, from 0 (all Low) to 4 (all No Travel).
-    avg_risk: number
-    worst_level: RiskLevel
-    checkpoints: Checkpoint[]
-  }
+  recommended_route_id: string
+  // One sentence on why the recommended route wins.
+  reason: string
+  // Shown when every route crosses No Travel conditions; null otherwise.
+  warning: string | null
+  // Extra information, e.g. when fewer than 3 routes were found.
+  notes: string[]
+  // In A, B, C order (fastest first).
+  routes: RoutePlan[]
 }
 
 // Form fields an error can point at; values match the request field names; used by TripPlanError and the trip form.

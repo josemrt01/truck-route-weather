@@ -42,6 +42,16 @@ def create_trip_plan(
 
     recommendation = recommend_route(planned_routes)
 
+    # Position of each route in the ranking, 1 = recommended; e.g. {"B": 1, "A": 2, "C": 3}.
+    rank_by_label = {}
+    for index, planned_route in enumerate(recommendation.ranked_routes):
+        rank_by_label[planned_route.label] = index + 1
+
+    # Routes stay in A, B, C order (fastest first); the rank says which one to take.
+    serialized_routes = []
+    for planned_route in planned_routes:
+        serialized_routes.append(_serialize_route(planned_route, rank_by_label[planned_route.label]))
+
     return {
         "origin": asdict(origin),
         "destination": asdict(destination),
@@ -50,8 +60,7 @@ def create_trip_plan(
         "reason": recommendation.reason,
         "warning": recommendation.warning,
         "notes": notes,
-        # Until the frontend shows every route (step 5.4), send only the fastest one (A).
-        "route": _serialize_route(planned_routes[0]),
+        "routes": serialized_routes,
     }
 
 
@@ -84,13 +93,15 @@ def _build_route_count_note(route_count: int) -> str:
     return f"Only {route_count} routes found between these places."
 
 
-def _serialize_route(planned_route: PlannedRoute) -> dict:
+def _serialize_route(planned_route: PlannedRoute, rank: int) -> dict:
     progress = planned_route.progress
     risk_summary = planned_route.risk_summary
     assessed_checkpoints = planned_route.assessed_checkpoints
 
     # Distance is our own measured total, so it matches the last checkpoint.
     return {
+        "id": planned_route.label,
+        "rank": rank,
         "geometry": planned_route.route.geometry,
         "distance_mi": round(progress.miles_at[-1], MILE_DECIMALS),
         "duration_s": round(progress.seconds_at[-1]),

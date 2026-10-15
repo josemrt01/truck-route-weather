@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 from trips.exceptions import GraphHopperError, RoutingError, WeatherServiceError
 from trips.services import trip_plan_service
 from trips.tests.test_data import DALLAS_PLACE, DEPARTURE_ISO, FIXED_NOW, HOUSTON_PLACE
-from trips.types import HourlyForecast, Route, TimeInterval
+from trips.types import HourlyForecast, Recommendation, Route, TimeInterval
 
 # Text typed in the form mapped to the place geocoding returns; used by the fake geocoder below.
 PLACES_BY_TEXT = {"Dallas, TX": DALLAS_PLACE, "Houston, TX": HOUSTON_PLACE}
@@ -79,11 +79,15 @@ def test_returns_places_route_and_checkpoints():
 
     assert response.status_code == 200
     trip_plan = response.json()
-    route = trip_plan["route"]
+    route = trip_plan["routes"][0]
 
     assert trip_plan["origin"] == {"label": "Dallas, Texas", "lat": 32.7767, "lon": -96.797}
     assert trip_plan["destination"] == {"label": "Houston, Texas", "lat": 29.7604, "lon": -95.3698}
     assert trip_plan["departure_utc"] == "2026-10-13T13:00:00Z"
+    # One fake route: it is Route A and the recommended one.
+    assert trip_plan["recommended_route_id"] == "A"
+    assert route["id"] == "A"
+    assert route["rank"] == 1
     assert route["geometry"] == [[-96.797, 32.7767], [-95.3698, 29.7604]]
     # Our own measured total for the fake straight line, not GraphHopper's distance.
     assert route["distance_mi"] == 224.8
@@ -143,7 +147,7 @@ def test_load_rule_needs_weight_over_the_limit():
     response = post_trip_plan({**VALID_BODY, "weight_lb": 40_000})
 
     # At exactly 40,000 lb the load rule doesn't apply, so 38 mph gusts stay High.
-    checkpoint = response.json()["route"]["checkpoints"][0]
+    checkpoint = response.json()["routes"][0]["checkpoints"][0]
     assert (checkpoint["level"], checkpoint["cause"]) == (2, "wind")
 
 
@@ -283,13 +287,30 @@ def fake_routes_with_times(monkeypatch, route_seconds):
     monkeypatch.setattr(trip_plan_service, "get_routes", get_fake_routes)
 
 
-def test_sends_the_fastest_route_first(monkeypatch):
+def test_labels_routes_from_fastest_to_slowest(monkeypatch):
     # GraphHopper's order: 4 h, 3 h 27 min, 5 h.
     fake_routes_with_times(monkeypatch, [14_400, 12_420, 18_000])
 
-    response = post_trip_plan(VALID_BODY)
+    routes = post_trip_plan(VALID_BODY).json()["routes"]
 
-    assert response.json()["route"]["duration_s"] == 12_420
+    assert [route["id"] for route in routes] == ["A", "B", "C"]
+    assert [route["duration_s"] for route in routes] == [12_420, 14_400, 18_000]
+
+
+def test_ranks_come_from_the_recommendation(monkeypatch):
+    fake_routes_with_times(monkeypatch, [12_420, 14_400, 18_000])
+
+    def recommend_slowest_first(planned_routes):
+        # Rank C, B, A, the reverse of the A, B, C order the service sends.
+        ranked_routes = [planned_routes[2], planned_routes[1], planned_routes[0]]
+        return Recommendation(ranked_routes=ranked_routes, reason="Fake reason.", warning=None)
+
+    monkeypatch.setattr(trip_plan_service, "recommend_route", recommend_slowest_first)
+
+    trip_plan = post_trip_plan(VALID_BODY).json()
+
+    assert trip_plan["recommended_route_id"] == "C"
+    assert [(route["id"], route["rank"]) for route in trip_plan["routes"]] == [("A", 3), ("B", 2), ("C", 1)]
 
 
 def test_asks_for_weather_once_per_route(monkeypatch, fake_open_meteo):

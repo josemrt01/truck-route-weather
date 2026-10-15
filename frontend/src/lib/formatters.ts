@@ -1,3 +1,5 @@
+import { getForecastHourTime } from './dateTime'
+
 // Unit conversions for formatDuration; private to this file.
 const SECONDS_PER_MINUTE = 60
 const MINUTES_PER_HOUR = 60
@@ -32,11 +34,8 @@ export function formatPrecipitationRate(inchesPerHour: number): string {
   return `${inchesPerHour.toFixed(2)} in/hr`
 }
 
-// Milliseconds in one hour; used by formatForecastHourLabel.
-const MILLISECONDS_PER_HOUR = 60 * 60 * 1000
-
 // Hours from now and the local time of that forecast hour, e.g. "+6h · Tue 2:00 PM".
 export function formatForecastHourLabel(startHourUtc: string, hour: number): string {
-  const forecastTime = new Date(new Date(startHourUtc).getTime() + hour * MILLISECONDS_PER_HOUR)
+  const forecastTime = getForecastHourTime(startHourUtc, hour)
   return `+${hour}h · ${formatEta(forecastTime.toISOString())}`
 }

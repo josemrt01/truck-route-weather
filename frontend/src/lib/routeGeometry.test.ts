@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { RiskCause, RiskLevel } from '../types/risk'
 import { makeRoutePlan } from '../test/makeRoutePlan'
 import type { Checkpoint, LonLat } from '../types/tripPlan'
-import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments, getWorseCheckpoint } from './routeGeometry'
+import { TruckStatus } from '../types/truck'
+import {
+  buildCheckpointPoints,
+  buildOtherRouteLines,
+  buildRouteSegments,
+  getTruckPosition,
+  getWorseCheckpoint,
+} from './routeGeometry'
 
 // Builds a checkpoint for the tests; position, previous_point_index and level matter, the weather is calm.
 function makeCheckpoint(
@@ -150,5 +157,87 @@ describe('buildOtherRouteLines', () => {
 
   it('is empty when the only route is the selected one', () => {
     expect(buildOtherRouteLines([routeA], 'A').features).toEqual([])
+  })
+})
+
+describe('getTruckPosition', () => {
+  // Miles in one degree along the equator (Earth radius 3958.8 mi), the unit along() measures in.
+  const ONE_DEGREE_MI = (2 * Math.PI * 3958.8) / 360
+
+  // A checkpoint with a given place, mile and arrival time; previous_point_index places it on the route.
+  function makeTimedCheckpoint(lon: number, lat: number, previousPointIndex: number, mile: number, etaUtc: string) {
+    return { ...makeCheckpoint(lon, lat, previousPointIndex), mile, eta_utc: etaUtc }
+  }
+
+  // Straight route (0,0) -> (1,0), driven from 13:00 to 14:00.
+  const straightRoute = makeRoutePlan({
+    geometry: [
+      [0, 0],
+      [1, 0],
+    ],
+    checkpoints: [
+      makeTimedCheckpoint(0, 0, 0, 0, '2026-10-13T13:00:00Z'),
+      makeTimedCheckpoint(1, 0, 0, ONE_DEGREE_MI, '2026-10-13T14:00:00Z'),
+    ],
+  })
+
+  it('waits at the start before departure', () => {
+    const position = getTruckPosition(straightRoute, new Date('2026-10-13T12:00:00Z'))
+
+    expect(position).toEqual({ lonLat: [0, 0], status: TruckStatus.NOT_DEPARTED })
+  })
+
+  it('stays at the end after arrival', () => {
+    const position = getTruckPosition(straightRoute, new Date('2026-10-13T15:00:00Z'))
+
+    expect(position).toEqual({ lonLat: [1, 0], status: TruckStatus.ARRIVED })
+  })
+
+  it('is halfway at half the driving time', () => {
+    const position = getTruckPosition(straightRoute, new Date('2026-10-13T13:30:00Z'))
+
+    expect(position.status).toBe(TruckStatus.ON_THE_WAY)
+    expect(position.lonLat[0]).toBeCloseTo(0.5, 3)
+    expect(position.lonLat[1]).toBeCloseTo(0, 3)
+  })
+
+  it('follows the road around a corner instead of cutting across', () => {
+    // Road (0,0) -> (1,0) -> (1,1), with checkpoints only at its two ends.
+    const cornerRoute = makeRoutePlan({
+      geometry: [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+      ],
+      checkpoints: [
+        makeTimedCheckpoint(0, 0, 0, 0, '2026-10-13T13:00:00Z'),
+        makeTimedCheckpoint(1, 1, 1, 2 * ONE_DEGREE_MI, '2026-10-13T15:00:00Z'),
+      ],
+    })
+
+    // Half the time = half the road = the corner, not the straight-line middle (0.5, 0.5).
+    const position = getTruckPosition(cornerRoute, new Date('2026-10-13T14:00:00Z'))
+
+    expect(position.lonLat[0]).toBeCloseTo(1, 2)
+    expect(position.lonLat[1]).toBeCloseTo(0, 2)
+  })
+
+  it('is at a middle checkpoint at exactly its arrival time', () => {
+    const route = makeRoutePlan({
+      geometry: [
+        [0, 0],
+        [1, 0],
+        [2, 0],
+      ],
+      checkpoints: [
+        makeTimedCheckpoint(0, 0, 0, 0, '2026-10-13T13:00:00Z'),
+        makeTimedCheckpoint(1, 0, 0, ONE_DEGREE_MI, '2026-10-13T14:00:00Z'),
+        makeTimedCheckpoint(2, 0, 1, 2 * ONE_DEGREE_MI, '2026-10-13T15:00:00Z'),
+      ],
+    })
+
+    const position = getTruckPosition(route, new Date('2026-10-13T14:00:00Z'))
+
+    expect(position.lonLat[0]).toBeCloseTo(1, 3)
   })
 })

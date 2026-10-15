@@ -19,3 +19,12 @@ export function convertDateTimeLocalToIso(value: string): string {
 
   return Number.isNaN(date.getTime()) ? '' : date.toISOString()
 }
+
+// Milliseconds in one hour; used by getForecastHourTime.
+const MILLISECONDS_PER_HOUR = 60 * 60 * 1000
+
+// The moment a forecast hour stands for: hour 0 is startHourUtc, hour 6 is six hours later;
+// used by the slider label and the truck marker.
+export function getForecastHourTime(startHourUtc: string, hour: number): Date {
+  return new Date(new Date(startHourUtc).getTime() + hour * MILLISECONDS_PER_HOUR)
+}

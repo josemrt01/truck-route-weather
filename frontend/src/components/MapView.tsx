@@ -33,13 +33,15 @@ import {
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
 import { buildHeatmapPoints, getHeatmapColorExpression, getHeatmapRadiusExpression } from '../lib/heatmapGeometry'
-import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments } from '../lib/routeGeometry'
+import { getForecastHourTime } from '../lib/dateTime'
+import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments, getTruckPosition } from '../lib/routeGeometry'
 import { getRouteById } from '../lib/tripPlanRoutes'
 import { RouteEndpoint } from '../types/routeEndpoint'
 import type { Heatmap } from '../types/heatmap'
 import type { TripPlan } from '../types/tripPlan'
 import { RouteEndpointMarker } from './RouteEndpointMarker'
 import { SegmentDetails } from './SegmentDetails'
+import { TruckMarker } from './TruckMarker'
 // Runs once to tell MapLibre where its worker file is; must load before any map is created.
 import '../lib/maplibreWorker'
 
@@ -87,6 +89,10 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: Ma
     () => (selectedRoute ? buildCheckpointPoints(selectedRoute.checkpoints) : null),
     [selectedRoute],
   )
+  // The truck at the slider's time; it needs the heatmap's hour 0, so it appears once the heatmap is loaded.
+  const sliderTime = heatmap ? getForecastHourTime(heatmap.start_hour_utc, forecastHour) : null
+  const truckPosition = selectedRoute && sliderTime ? getTruckPosition(selectedRoute, sliderTime) : null
+
   const heatmapPoints = useMemo(() => (heatmap ? buildHeatmapPoints(heatmap) : null), [heatmap])
   const otherRouteLines = useMemo(
     () => (tripPlan && selectedRouteId ? buildOtherRouteLines(tripPlan.routes, selectedRouteId) : null),
@@ -241,6 +247,9 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: Ma
           <RouteEndpointMarker place={tripPlan.destination} endpoint={RouteEndpoint.END} />
         </>
       )}
+
+      {/* After the A and B pins, so the truck is drawn on top of them. */}
+      {truckPosition && <TruckMarker position={truckPosition} />}
 
       {/* Miles, times, risk and weather for the clicked stretch. */}
       {visibleSegment && segmentStart && segmentEnd && (

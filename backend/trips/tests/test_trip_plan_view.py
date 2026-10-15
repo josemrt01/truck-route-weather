@@ -33,13 +33,15 @@ def fake_graphhopper(monkeypatch):
     monkeypatch.setattr(trip_plan_service, "get_coordinates_from_text", PLACES_BY_TEXT.get)
     monkeypatch.setattr(
         trip_plan_service,
-        "get_route",
-        lambda origin, destination: Route(
-            geometry=[origin, destination],
-            distance_m=385_000,
-            time_s=12_420.4,
-            time_intervals=[TimeInterval(start_index=0, end_index=1, seconds=12_420.4)],
-        ),
+        "get_routes",
+        lambda origin, destination: [
+            Route(
+                geometry=[origin, destination],
+                distance_m=385_000,
+                time_s=12_420.4,
+                time_intervals=[TimeInterval(start_index=0, end_index=1, seconds=12_420.4)],
+            )
+        ],
     )
 
 
@@ -234,7 +236,7 @@ def test_reports_routing_error_as_bad_request(monkeypatch):
     def raise_routing_error(origin, destination):
         raise RoutingError("Cannot find point 0")
 
-    monkeypatch.setattr(trip_plan_service, "get_route", raise_routing_error)
+    monkeypatch.setattr(trip_plan_service, "get_routes", raise_routing_error)
 
     response = post_trip_plan(VALID_BODY)
 

@@ -3,7 +3,7 @@
 from dataclasses import asdict
 from datetime import UTC, datetime
 
-from trips.clients.graphhopper_client import get_coordinates_from_text, get_route
+from trips.clients.graphhopper_client import get_coordinates_from_text, get_routes
 from trips.clients.open_meteo_client import get_hourly_forecasts
 from trips.constants import MILE_DECIMALS
 from trips.exceptions import PlaceNotFoundError
@@ -24,8 +24,8 @@ def create_trip_plan(
     origin = _get_place_or_raise(origin_text, field="origin")
     destination = _get_place_or_raise(destination_text, field="destination")
 
-    # Ask GraphHopper for the driving route between both points.
-    route = get_route((origin.lon, origin.lat), (destination.lon, destination.lat))
+    # Ask GraphHopper for the driving routes between both points; step 5.2 plans all of them, for now use the best.
+    route = get_routes((origin.lon, origin.lat), (destination.lon, destination.lat))[0]
 
     # Measure the route, then place checkpoints along it with their arrival times.
     progress = build_route_progress(route.geometry, route.time_intervals)

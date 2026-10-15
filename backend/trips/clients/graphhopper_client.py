@@ -3,7 +3,7 @@
 import requests
 from django.conf import settings
 
-from trips.constants import COUNTRY_CODE, HTTP_TIMEOUT_SECONDS, ROUTING_PROFILE
+from trips.constants import COUNTRY_CODE, HTTP_TIMEOUT_SECONDS, ROUTE_COUNT, ROUTING_PROFILE
 from trips.exceptions import GraphHopperError, RoutingError
 from trips.types import LonLat, Place, Route, TimeInterval
 
@@ -13,8 +13,16 @@ GEOCODING_LOCALE = "en"
 # Matches requested before keeping the first one in COUNTRY_CODE; used by get_coordinates_from_text.
 GEOCODING_RESULT_LIMIT = 10
 
-# GraphHopper reports durations in milliseconds; used by get_route to convert to seconds.
+# GraphHopper reports durations in milliseconds; used by _build_route to convert to seconds.
 MILLISECONDS_PER_SECOND = 1000
+
+# Alternatives may take up to 2x the best route's time; GraphHopper's default (1.4) often gave only 1 route;
+# used by get_routes.
+ALTERNATIVE_MAX_WEIGHT_FACTOR = 2.0
+
+# Alternatives may share up to 80% of their road with the best route (GraphHopper's default is 0.6);
+# used by get_routes.
+ALTERNATIVE_MAX_SHARE_FACTOR = 0.8
 
 
 def get_coordinates_from_text(text: str) -> Place | None:
@@ -32,8 +40,8 @@ def get_coordinates_from_text(text: str) -> Place | None:
     return None
 
 
-def get_route(origin: LonLat, destination: LonLat) -> Route:
-    """Return the fastest driving route between two points."""
+def get_routes(origin: LonLat, destination: LonLat) -> list[Route]:
+    """Return up to ROUTE_COUNT driving routes between two points, best first."""
     data = _get_json(
         "/route",
         # A list of pairs instead of a dict, because "point" is sent twice and a dict can't repeat a key.
@@ -47,6 +55,11 @@ def get_route(origin: LonLat, destination: LonLat) -> Route:
             ("instructions", "false"),
             # Driving time per stretch of road, used to time each checkpoint.
             ("details", "time"),
+            # Ask for alternative routes, not just the best one.
+            ("algorithm", "alternative_route"),
+            ("alternative_route.max_paths", str(ROUTE_COUNT)),
+            ("alternative_route.max_weight_factor", str(ALTERNATIVE_MAX_WEIGHT_FACTOR)),
+            ("alternative_route.max_share_factor", str(ALTERNATIVE_MAX_SHARE_FACTOR)),
         ],
     )
 
@@ -54,9 +67,14 @@ def get_route(origin: LonLat, destination: LonLat) -> Route:
     if not paths:
         raise RoutingError("GraphHopper returned no paths.")
 
-    # The first path is the fastest one.
-    path = paths[0]
+    routes = []
+    for path in paths:
+        routes.append(_build_route(path))
 
+    return routes
+
+
+def _build_route(path: dict) -> Route:
     # Keep only lon and lat (positions 0 and 1); some responses add elevation as a third value.
     geometry = [(coordinate[0], coordinate[1]) for coordinate in path["points"]["coordinates"]]
     time_s = path["time"] / MILLISECONDS_PER_SECOND

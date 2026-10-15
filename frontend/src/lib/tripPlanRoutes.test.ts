@@ -1,23 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { RiskLevel } from '../types/risk'
-import type { RoutePlan, TripPlan } from '../types/tripPlan'
-import { getRouteById } from './tripPlanRoutes'
-
-// Builds a route for the tests; only the id matters here.
-function makeRoute(id: string): RoutePlan {
-  return {
-    id,
-    rank: 1,
-    geometry: [],
-    distance_mi: 0,
-    duration_s: 0,
-    arrival_utc: '2026-10-13T16:27:00Z',
-    miles_by_level: { low: 0, moderate: 0, high: 0, severe: 0, no_travel: 0 },
-    avg_risk: 0,
-    worst_level: RiskLevel.LOW,
-    checkpoints: [],
-  }
-}
+import { makeRoutePlan } from '../test/makeRoutePlan'
+import type { TripPlan } from '../types/tripPlan'
+import { getRouteById, getRoutesInRankOrder } from './tripPlanRoutes'
 
 // A plan with routes A, B and C; only the routes matter here.
 const tripPlan: TripPlan = {
@@ -28,7 +12,7 @@ const tripPlan: TripPlan = {
   reason: 'Route B has 0.0 Severe miles vs 40.0 on Route A.',
   warning: null,
   notes: [],
-  routes: [makeRoute('A'), makeRoute('B'), makeRoute('C')],
+  routes: [makeRoutePlan({ id: 'A' }), makeRoutePlan({ id: 'B' }), makeRoutePlan({ id: 'C' })],
 }
 
 describe('getRouteById', () => {
@@ -38,5 +22,21 @@ describe('getRouteById', () => {
 
   it('falls back to the first route for an unknown id', () => {
     expect(getRouteById(tripPlan, 'Z').id).toBe('A')
+  })
+})
+
+describe('getRoutesInRankOrder', () => {
+  it('puts the recommended route first', () => {
+    const routes = [
+      makeRoutePlan({ id: 'A', rank: 2 }),
+      makeRoutePlan({ id: 'B', rank: 1 }),
+      makeRoutePlan({ id: 'C', rank: 3 }),
+    ]
+
+    expect(getRoutesInRankOrder(routes).map((route) => route.id)).toEqual(['B', 'A', 'C'])
+  })
+
+  it('keeps a single route', () => {
+    expect(getRoutesInRankOrder([makeRoutePlan({ id: 'A' })]).map((route) => route.id)).toEqual(['A'])
   })
 })

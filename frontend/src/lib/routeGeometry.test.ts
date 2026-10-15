@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RiskCause, RiskLevel } from '../types/risk'
-import type { Checkpoint, LonLat, RoutePlan } from '../types/tripPlan'
+import { makeRoutePlan } from '../test/makeRoutePlan'
+import type { Checkpoint, LonLat } from '../types/tripPlan'
 import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments, getWorseCheckpoint } from './routeGeometry'
 
 // Builds a checkpoint for the tests; position, previous_point_index and level matter, the weather is calm.
@@ -110,37 +111,30 @@ describe('buildCheckpointPoints', () => {
   })
 })
 
-// Builds a route for the tests; only the id and geometry matter here.
-function makeRoute(id: string, geometry: LonLat[]): RoutePlan {
-  return {
-    id,
-    rank: 1,
-    geometry,
-    distance_mi: 0,
-    duration_s: 0,
-    arrival_utc: '2026-10-13T16:27:00Z',
-    miles_by_level: { low: 0, moderate: 0, high: 0, severe: 0, no_travel: 0 },
-    avg_risk: 0,
-    worst_level: RiskLevel.LOW,
-    checkpoints: [],
-  }
-}
-
 describe('buildOtherRouteLines', () => {
-  const routeA = makeRoute('A', [
-    [0, 0],
-    [10, 0],
-  ])
-  const routeB = makeRoute('B', [
-    [0, 0],
-    [5, 5],
-    [10, 0],
-  ])
-  const routeC = makeRoute('C', [
-    [0, 0],
-    [5, -5],
-    [10, 0],
-  ])
+  const routeA = makeRoutePlan({
+    id: 'A',
+    geometry: [
+      [0, 0],
+      [10, 0],
+    ],
+  })
+  const routeB = makeRoutePlan({
+    id: 'B',
+    geometry: [
+      [0, 0],
+      [5, 5],
+      [10, 0],
+    ],
+  })
+  const routeC = makeRoutePlan({
+    id: 'C',
+    geometry: [
+      [0, 0],
+      [5, -5],
+      [10, 0],
+    ],
+  })
 
   it('makes one line per route except the selected one', () => {
     const lines = buildOtherRouteLines([routeA, routeB, routeC], 'B')

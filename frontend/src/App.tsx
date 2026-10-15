@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react'
 import { getBackendStatus } from './api/healthApi'
 import { MapView } from './components/MapView'
+import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
-import { formatDistance, formatDuration, formatEta } from './lib/formatters'
-import { getRouteById } from './lib/tripPlanRoutes'
 import { BackendStatus } from './types/backendStatus'
 import type { TripPlan } from './types/tripPlan'
 
 function App() {
   const [status, setStatus] = useState<BackendStatus>(BackendStatus.CHECKING)
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null)
-  // The route drawn with risk colors; starts as the recommended one, the route cards change it (step 5.6).
+  // The route drawn with risk colors; starts as the recommended one, the route cards change it.
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
-  // Summarized below the form until the route cards exist (step 5.6).
-  const selectedRoute = tripPlan && selectedRouteId ? getRouteById(tripPlan, selectedRouteId) : null
 
   // Check the backend once, when the page first loads.
   useEffect(() => {
@@ -26,25 +23,21 @@ function App() {
   }
 
   return (
-    // Phones: panel on top, map below. From md (768px) up: map fills the screen, panel floats over it.
+    // Phones: panel on top (at most half the screen, scrolling), map below.
+    // From md (768px) up: map fills the screen, panel floats over it.
     <main className="flex h-screen flex-col md:relative md:block">
       <div className="relative min-h-0 flex-1 md:absolute md:inset-0">
         <MapView tripPlan={tripPlan} selectedRouteId={selectedRouteId} />
       </div>
 
-      <aside className="flex flex-col gap-3 bg-surface p-4 text-sm md:absolute md:top-3 md:left-3 md:max-h-[calc(100vh-24px)] md:w-80 md:overflow-y-auto md:rounded-lg md:shadow-floating-panel">
+      <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-sm md:absolute md:top-3 md:left-3 md:max-h-[calc(100vh-24px)] md:w-80 md:overflow-y-auto md:rounded-lg md:shadow-floating-panel">
         <h1 className="text-lg font-bold">Truck Route Weather</h1>
         <span className="text-muted">Backend: {status}</span>
 
         <TripForm onTripPlanned={handleTripPlanned} />
 
-        {/* Temporary summary until the map draws the route and the route cards exist. */}
-        {tripPlan && selectedRoute && (
-          <p className="text-muted">
-            {tripPlan.origin.label} → {tripPlan.destination.label} · Route {selectedRoute.id} ·{' '}
-            {formatDistance(selectedRoute.distance_mi)} · {formatDuration(selectedRoute.duration_s)} · Arrives{' '}
-            {formatEta(selectedRoute.arrival_utc)}
-          </p>
+        {tripPlan && selectedRouteId && (
+          <RouteCards tripPlan={tripPlan} selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} />
         )}
       </aside>
     </main>

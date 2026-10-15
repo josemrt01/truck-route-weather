@@ -1,7 +1,7 @@
 import type { ExpressionSpecification } from 'maplibre-gl'
 import type { FeatureCollection, Point } from 'geojson'
 import { RISK_LEVEL_COLORS } from '../config/riskConfig'
-import { HEATMAP_CELL_COVERAGE } from '../config/mapConfig'
+import { HEATMAP_CELL_COVERAGE, HEATMAP_LOW_OPACITY, HEATMAP_RISK_OPACITY } from '../config/mapConfig'
 import { RiskLevel } from '../types/risk'
 import type { Heatmap } from '../types/heatmap'
 
@@ -11,7 +11,7 @@ const PIXELS_PER_DEGREE_AT_ZOOM_0 = 512 / 360
 // Highest zoom MapLibre supports; the radius rule must reach it.
 const MAX_ZOOM = 22
 
-// Fully transparent, so Low areas don't cover the map; used by getHeatmapColorExpression.
+// Fully transparent, for a level the frontend doesn't know (shouldn't happen); used by getHeatmapColorExpression.
 const TRANSPARENT_COLOR = 'rgba(0, 0, 0, 0)'
 
 // One map point per grid cell, with its level for every hour as properties r0 ... r48.
@@ -31,11 +31,13 @@ export function buildHeatmapPoints(heatmap: Heatmap): FeatureCollection<Point> {
   return { type: 'FeatureCollection', features }
 }
 
-// Color rule for one forecast hour: each circle takes the color of its level that hour; Low is transparent.
+// Color rule for one forecast hour: each circle takes the color of its level that hour.
 export function getHeatmapColorExpression(hour: number): ExpressionSpecification {
   return [
     'match',
     ['get', `r${hour}`],
+    RiskLevel.LOW,
+    RISK_LEVEL_COLORS[RiskLevel.LOW],
     RiskLevel.MODERATE,
     RISK_LEVEL_COLORS[RiskLevel.MODERATE],
     RiskLevel.HIGH,
@@ -46,6 +48,11 @@ export function getHeatmapColorExpression(hour: number): ExpressionSpecification
     RISK_LEVEL_COLORS[RiskLevel.NO_TRAVEL],
     TRANSPARENT_COLOR,
   ]
+}
+
+// Opacity rule for one forecast hour: Low cells are fainter than risky ones, so calm areas stay in the background.
+export function getHeatmapOpacityExpression(hour: number): ExpressionSpecification {
+  return ['match', ['get', `r${hour}`], RiskLevel.LOW, HEATMAP_LOW_OPACITY, HEATMAP_RISK_OPACITY]
 }
 
 // Circle radius in pixels at zoom 0 that covers part of one grid cell, so neighboring circles blend.

@@ -9,7 +9,6 @@ import {
   CHECKPOINT_SOURCE_ID,
   FIT_ANIMATION_MS,
   HEATMAP_LAYER_ID,
-  HEATMAP_OPACITY,
   HEATMAP_SOURCE_ID,
   INITIAL_MAP_VIEW,
   MAP_STYLE_URL,
@@ -32,7 +31,12 @@ import {
   ROUTE_SEGMENT_SOURCE_ID,
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
-import { buildHeatmapPoints, getHeatmapColorExpression, getHeatmapRadiusExpression } from '../lib/heatmapGeometry'
+import {
+  buildHeatmapPoints,
+  getHeatmapColorExpression,
+  getHeatmapOpacityExpression,
+  getHeatmapRadiusExpression,
+} from '../lib/heatmapGeometry'
 import { getForecastHourTime } from '../lib/dateTime'
 import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments, getTruckPosition } from '../lib/routeGeometry'
 import { getRouteById } from '../lib/tripPlanRoutes'
@@ -174,7 +178,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: Ma
 
       {/* Layers draw in the order listed: gray other routes, then the selected route's dark outline,
           risk-colored stretches and highlight, then the dots on top. */}
-      {/* Weather heatmap at the bottom: each grid point a soft circle in its risk color (Low is transparent). */}
+      {/* Weather heatmap at the bottom: each grid point a soft circle in its risk color (Low is fainter). */}
       {heatmapPoints && tripPlan && (
         <Source id={HEATMAP_SOURCE_ID} type="geojson" data={heatmapPoints}>
           <Layer
@@ -186,7 +190,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: Ma
               'circle-radius': getHeatmapRadiusExpression(tripPlan.corridor_cell_size_deg),
               // Soft edges, so neighboring circles blend into one colored area.
               'circle-blur': 1,
-              'circle-opacity': HEATMAP_OPACITY,
+              'circle-opacity': getHeatmapOpacityExpression(forecastHour),
             }}
           />
         </Source>

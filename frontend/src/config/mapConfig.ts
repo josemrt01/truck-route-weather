@@ -27,8 +27,13 @@ export const HEATMAP_LAYER_ID = 'heatmap-circles'
 // and blend into one area instead of separate dots; used by getHeatmapRadiusAtZoom0.
 export const HEATMAP_CELL_COVERAGE = 1.25
 
-// Heatmap circle opacity; low enough that the map and routes stay readable underneath; used by MapView.
-export const HEATMAP_OPACITY = 0.45
+// Heatmap circle opacity for Moderate and worse; low enough that the map and routes stay readable underneath;
+// used by getHeatmapOpacityExpression.
+export const HEATMAP_RISK_OPACITY = 0.45
+
+// Fainter opacity for Low cells: the corridor stays visible as "checked, calm" without covering the map;
+// used by getHeatmapOpacityExpression.
+export const HEATMAP_LOW_OPACITY = 0.2
 
 // Name of the unselected route lines inside MapLibre; used by MapView.
 export const OTHER_ROUTES_SOURCE_ID = 'other-routes'

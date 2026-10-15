@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { RiskLevel } from '../types/risk'
 import type { Heatmap } from '../types/heatmap'
-import { buildHeatmapPoints, getHeatmapColorExpression, getHeatmapRadiusAtZoom0 } from './heatmapGeometry'
+import { RISK_LEVEL_COLORS } from '../config/riskConfig'
+import {
+  buildHeatmapPoints,
+  getHeatmapColorExpression,
+  getHeatmapOpacityExpression,
+  getHeatmapRadiusAtZoom0,
+} from './heatmapGeometry'
 
 // Two points with three hours each; only levels and positions matter here.
 const heatmap: Heatmap = {
@@ -33,6 +39,20 @@ describe('buildHeatmapPoints', () => {
 describe('getHeatmapColorExpression', () => {
   it('reads the property of the given hour', () => {
     expect(getHeatmapColorExpression(6)[1]).toEqual(['get', 'r6'])
+  })
+
+  it('draws Low in its own color, so calm cells are visible', () => {
+    // ['match', input, LOW, color, ...]: the color right after the Low level.
+    const expression = getHeatmapColorExpression(0)
+
+    expect(expression[2]).toBe(RiskLevel.LOW)
+    expect(expression[3]).toBe(RISK_LEVEL_COLORS[RiskLevel.LOW])
+  })
+})
+
+describe('getHeatmapOpacityExpression', () => {
+  it('makes Low fainter than the risk levels for the given hour', () => {
+    expect(getHeatmapOpacityExpression(6)).toEqual(['match', ['get', 'r6'], RiskLevel.LOW, 0.2, 0.45])
   })
 })
 

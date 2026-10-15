@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from trips.constants import (
     CHECKPOINT_SPACING_CHOICES_MI,
+    MAX_CORRIDOR_POINTS,
     MAX_DEPARTURE_FUTURE,
     MAX_DEPARTURE_PAST,
     MAX_TRUCK_WEIGHT_LB,
@@ -22,21 +23,28 @@ class TimezoneAwareDateTimeField(serializers.DateTimeField):
         return value.astimezone(UTC)
 
 
+class TruckWeightField(serializers.IntegerField):
+    """Truck weight in whole pounds, from 1 to MAX_TRUCK_WEIGHT_LB; shared by the trip and heatmap requests."""
+
+    def __init__(self):
+        # A minimum of 1 means "more than 0".
+        super().__init__(
+            min_value=1,
+            max_value=MAX_TRUCK_WEIGHT_LB,
+            error_messages={
+                "min_value": "Weight must be more than 0 lb.",
+                # ":," adds thousands separators: 80000 -> "80,000".
+                "max_value": f"Weight can't be more than {MAX_TRUCK_WEIGHT_LB:,} lb.",
+            },
+        )
+
+
 class TripPlanRequestSerializer(serializers.Serializer):
     origin = serializers.CharField(max_length=200)
     destination = serializers.CharField(max_length=200)
     departure = TimezoneAwareDateTimeField()
     spacing_mi = serializers.ChoiceField(choices=CHECKPOINT_SPACING_CHOICES_MI)
-    # Whole pounds; a minimum of 1 means "more than 0".
-    weight_lb = serializers.IntegerField(
-        min_value=1,
-        max_value=MAX_TRUCK_WEIGHT_LB,
-        error_messages={
-            "min_value": "Weight must be more than 0 lb.",
-            # ":," adds thousands separators: 80000 -> "80,000".
-            "max_value": f"Weight can't be more than {MAX_TRUCK_WEIGHT_LB:,} lb.",
-        },
-    )
+    weight_lb = TruckWeightField()
 
     def validate_departure(self, departure):
         now = timezone.now()
@@ -50,3 +58,20 @@ class TripPlanRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(f"Departure must be within the next {MAX_DEPARTURE_FUTURE.days} days.")
 
         return departure
+
+
+class HeatmapRequestSerializer(serializers.Serializer):
+    # [[lon, lat], ...] as the trip plan sent them in corridor_points.
+    points = serializers.ListField(
+        child=serializers.ListField(child=serializers.FloatField(), min_length=2, max_length=2),
+        min_length=1,
+        max_length=MAX_CORRIDOR_POINTS,
+    )
+    weight_lb = TruckWeightField()
+
+    def validate_points(self, points):
+        for lon, lat in points:
+            if lon < -180 or lon > 180 or lat < -90 or lat > 90:
+                raise serializers.ValidationError("Each point must be [lon, lat] in degrees.")
+
+        return points

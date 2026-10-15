@@ -55,16 +55,24 @@ def _get_first_validation_error(detail) -> tuple[str | None, str]:
     if isinstance(detail, dict):
         # Report only the first field with a problem.
         field = list(detail.keys())[0]
-        messages = detail[field]
-        message = messages[0] if isinstance(messages, list) else messages
+        message = _get_first_message(detail[field])
 
         # "non_field_errors" means the problem isn't tied to a single field.
-        return (None if field == "non_field_errors" else field), str(message)
+        return (None if field == "non_field_errors" else field), message
 
-    if isinstance(detail, list):
-        return None, str(detail[0])
+    return None, _get_first_message(detail)
 
-    return None, str(detail)
+
+def _get_first_message(errors) -> str:
+    # Errors can be nested: a list field reports per item, e.g. {0: ["A valid number is required."]}.
+    # Step inside dicts and lists, always taking the first entry, until we reach the message text.
+    while isinstance(errors, (dict, list)):
+        if isinstance(errors, dict):
+            errors = list(errors.values())[0]
+        else:
+            errors = errors[0]
+
+    return str(errors)
 
 
 def _build_error_response(message: str, status_code: int, field: str | None = None) -> Response:

@@ -53,7 +53,9 @@ def handle_api_exception(exc, context):
 def _get_first_validation_error(detail) -> tuple[str | None, str]:
     # Errors per field: {"origin": ["This field may not be blank."]}
     if isinstance(detail, dict):
-        field, messages = next(iter(detail.items()))
+        # Report only the first field with a problem.
+        field = list(detail.keys())[0]
+        messages = detail[field]
         message = messages[0] if isinstance(messages, list) else messages
 
         # "non_field_errors" means the problem isn't tied to a single field.

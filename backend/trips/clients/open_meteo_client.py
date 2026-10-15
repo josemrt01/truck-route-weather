@@ -1,7 +1,6 @@
 """Client for the Open-Meteo hourly weather forecast API."""
 
 from datetime import UTC, datetime
-from itertools import batched
 
 import requests
 from django.conf import settings
@@ -27,12 +26,22 @@ def get_hourly_forecasts(points: list[LonLat], start_hour_utc: datetime, end_hou
     """Return one HourlyForecast per point, in the same order, covering start_hour_utc to end_hour_utc."""
     forecasts = []
 
-    for batch in batched(points, MAX_POINTS_PER_REQUEST):
+    # Open-Meteo accepts at most MAX_POINTS_PER_REQUEST points per request, so take them in batches.
+    for batch_start in range(0, len(points), MAX_POINTS_PER_REQUEST):
+        # A slice past the end of the list just stops at the last point.
+        batch = points[batch_start : batch_start + MAX_POINTS_PER_REQUEST]
+
+        latitudes = []
+        longitudes = []
+        for lon, lat in batch:
+            latitudes.append(str(lat))
+            longitudes.append(str(lon))
+
         data = _get_json(
             {
                 # Open-Meteo takes comma-separated lists; position N in both lists is point N.
-                "latitude": ",".join(str(lat) for _, lat in batch),
-                "longitude": ",".join(str(lon) for lon, _ in batch),
+                "latitude": ",".join(latitudes),
+                "longitude": ",".join(longitudes),
                 "hourly": HOURLY_VARIABLES,
                 "wind_speed_unit": "mph",
                 # Also converts snowfall from centimeters to inches.
@@ -44,9 +53,13 @@ def get_hourly_forecasts(points: list[LonLat], start_hour_utc: datetime, end_hou
         )
 
         # With a single point Open-Meteo returns one object instead of a list.
-        locations = data if isinstance(data, list) else [data]
+        if isinstance(data, list):
+            locations = data
+        else:
+            locations = [data]
 
-        forecasts.extend(_build_hourly_forecast(location["hourly"]) for location in locations)
+        for location in locations:
+            forecasts.append(_build_hourly_forecast(location["hourly"]))
 
     return forecasts
 

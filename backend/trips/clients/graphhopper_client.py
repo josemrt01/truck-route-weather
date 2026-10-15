@@ -36,6 +36,7 @@ def get_route(origin: LonLat, destination: LonLat) -> Route:
     """Return the fastest driving route between two points."""
     data = _get_json(
         "/route",
+        # A list of pairs instead of a dict, because "point" is sent twice and a dict can't repeat a key.
         [
             ("point", _format_point(origin)),
             ("point", _format_point(destination)),
@@ -56,8 +57,8 @@ def get_route(origin: LonLat, destination: LonLat) -> Route:
     # The first path is the fastest one.
     path = paths[0]
 
-    # Keep only lon and lat; some responses add elevation as a third value.
-    geometry = [(lon, lat) for lon, lat, *_ in path["points"]["coordinates"]]
+    # Keep only lon and lat (positions 0 and 1); some responses add elevation as a third value.
+    geometry = [(coordinate[0], coordinate[1]) for coordinate in path["points"]["coordinates"]]
     time_s = path["time"] / MILLISECONDS_PER_SECOND
 
     return Route(
@@ -89,7 +90,7 @@ def _get_json(path: str, params: list[tuple[str, str]]) -> dict:
     try:
         response = requests.get(
             f"{settings.GRAPHHOPPER_BASE_URL}{path}",
-            params=[*params, ("key", api_key)],
+            params=params + [("key", api_key)],
             timeout=HTTP_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:

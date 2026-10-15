@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 
 from trips.types import HourlyForecast, WeatherHour
 
-# One forecast step; used to count hours between two times.
-ONE_HOUR = timedelta(hours=1)
+# Seconds in one hour; used to turn a time difference into a number of hours.
+SECONDS_PER_HOUR = 3600
 
 # Added before cutting minutes so times round to the nearest hour; used by round_to_nearest_hour.
 HALF_HOUR = timedelta(minutes=30)
@@ -22,8 +22,10 @@ def get_forecast_hour_index(eta_utc: datetime, first_hour_utc: datetime) -> int:
     """Return the position in the forecast lists of the hour nearest eta_utc."""
     rounded_eta = round_to_nearest_hour(eta_utc)
 
-    # Dividing two timedeltas gives the number of whole hours between them.
-    return (rounded_eta - first_hour_utc) // ONE_HOUR
+    seconds_from_start = (rounded_eta - first_hour_utc).total_seconds()
+
+    # Both times are full hours, so the division always gives a whole number.
+    return int(seconds_from_start / SECONDS_PER_HOUR)
 
 
 def get_weather_at(forecast: HourlyForecast, eta_utc: datetime) -> WeatherHour:
@@ -31,7 +33,7 @@ def get_weather_at(forecast: HourlyForecast, eta_utc: datetime) -> WeatherHour:
     index = get_forecast_hour_index(eta_utc, forecast.first_hour_utc)
 
     # Outside the window means we asked Open-Meteo for the wrong hours; fail loudly instead of guessing.
-    if not 0 <= index < len(forecast.wind_gust_mph):
+    if index < 0 or index >= len(forecast.wind_gust_mph):
         raise ValueError(f"ETA {eta_utc.isoformat()} is outside the forecast window.")
 
     return WeatherHour(

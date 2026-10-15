@@ -1,7 +1,6 @@
 """Places checkpoints along a route and works out when the truck reaches each one."""
 
 from datetime import datetime, timedelta
-from itertools import accumulate
 
 from trips.logic.geo_math import calculate_haversine_miles
 from trips.types import Checkpoint, LonLat, RouteProgress, TimeInterval
@@ -9,27 +8,12 @@ from trips.types import Checkpoint, LonLat, RouteProgress, TimeInterval
 
 def build_route_progress(geometry: list[LonLat], time_intervals: list[TimeInterval]) -> RouteProgress:
     """Return the miles and driving seconds from the start at every geometry point."""
-    segment_miles = [
-        calculate_haversine_miles(geometry[index], geometry[index + 1]) for index in range(len(geometry) - 1)
-    ]
+    segment_miles = _get_segment_miles(geometry)
+    segment_seconds = _get_segment_seconds(segment_miles, time_intervals)
 
-    # Each interval's time is shared among its segments by length, so a longer segment takes longer to drive.
-    segment_seconds = [0.0] * len(segment_miles)
-    for interval in time_intervals:
-        segment_indexes = range(interval.start_index, interval.end_index)
-        if not segment_indexes:
-            continue
-
-        interval_miles = sum(segment_miles[index] for index in segment_indexes)
-        for index in segment_indexes:
-            # Repeated points give an interval no length; then its segments share the time equally.
-            share = segment_miles[index] / interval_miles if interval_miles > 0 else 1 / len(segment_indexes)
-            segment_seconds[index] += interval.seconds * share
-
-    # Running totals: the value at point N is the sum of all segments before it.
     return RouteProgress(
-        miles_at=list(accumulate(segment_miles, initial=0.0)),
-        seconds_at=list(accumulate(segment_seconds, initial=0.0)),
+        miles_at=_get_running_totals(segment_miles),
+        seconds_at=_get_running_totals(segment_seconds),
     )
 
 
@@ -42,14 +26,13 @@ def build_checkpoints(
     """Return a checkpoint at mile 0, every spacing_mi, and at the destination."""
     checkpoints = []
     segment_index = 0
-    last_segment_index = len(geometry) - 2
 
     for target_mile in _get_target_miles(progress.miles_at[-1], spacing_mi):
-        # Move forward to the segment that contains the target mile; targets only grow, so never restart.
-        while segment_index < last_segment_index and progress.miles_at[segment_index + 1] < target_mile:
-            segment_index += 1
+        # Targets only grow, so the search continues from the last segment instead of restarting.
+        segment_index = _find_segment_index(progress.miles_at, target_mile, segment_index)
 
         # How far along the segment the target mile is: 0 = its start point, 1 = its end point.
+        # Example: target 30 mi on a segment from 25 to 35 mi gives 0.5, halfway between its two points.
         segment_start_mile = progress.miles_at[segment_index]
         segment_length_mi = progress.miles_at[segment_index + 1] - segment_start_mile
         fraction = (target_mile - segment_start_mile) / segment_length_mi if segment_length_mi > 0 else 0.0
@@ -71,6 +54,62 @@ def build_checkpoints(
         )
 
     return checkpoints
+
+
+def _get_segment_miles(geometry: list[LonLat]) -> list[float]:
+    # N points make N-1 segments; segment i runs from point i to point i+1.
+    segment_miles = []
+    for index in range(len(geometry) - 1):
+        segment_miles.append(calculate_haversine_miles(geometry[index], geometry[index + 1]))
+
+    return segment_miles
+
+
+def _get_segment_seconds(segment_miles: list[float], time_intervals: list[TimeInterval]) -> list[float]:
+    # GraphHopper gives one time per interval (several segments of the same road); each segment gets
+    # a share of it by length, so a longer segment takes longer to drive.
+    segment_seconds = [0.0] * len(segment_miles)
+
+    for interval in time_intervals:
+        segment_count = interval.end_index - interval.start_index
+        if segment_count <= 0:
+            continue
+
+        interval_miles = 0.0
+        for index in range(interval.start_index, interval.end_index):
+            interval_miles += segment_miles[index]
+
+        for index in range(interval.start_index, interval.end_index):
+            if interval_miles > 0:
+                share = segment_miles[index] / interval_miles
+            else:
+                # Repeated points give an interval no length; then its segments share the time equally.
+                share = 1 / segment_count
+            segment_seconds[index] += interval.seconds * share
+
+    return segment_seconds
+
+
+def _get_running_totals(values: list[float]) -> list[float]:
+    # The total at position N is the sum of all values before it, starting at 0: [2, 3, 5] -> [0, 2, 5, 10].
+    totals = [0.0]
+    for value in values:
+        totals.append(totals[-1] + value)
+
+    return totals
+
+
+def _find_segment_index(miles_at: list[float], target_mile: float, start_index: int) -> int:
+    """Return the index of the segment that contains target_mile, searching forward from start_index."""
+    # One mile value per point, and N points make N-1 segments, so the last segment's index is N-2.
+    last_segment_index = len(miles_at) - 2
+
+    segment_index = start_index
+    # Step forward while the target is past this segment's end point.
+    while segment_index < last_segment_index and miles_at[segment_index + 1] < target_mile:
+        segment_index += 1
+
+    return segment_index
 
 
 def _get_target_miles(total_miles: float, spacing_mi: float) -> list[float]:

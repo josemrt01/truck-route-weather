@@ -158,3 +158,12 @@ class Recommendation:
     reason: str
     # Set only when every route crosses No Travel conditions.
     warning: str | None
+
+
+@dataclass(frozen=True)
+class CorridorGrid:
+    """Heatmap points and the grid cell size they were built with; returned by corridor_builder."""
+
+    points: list[LonLat]
+    # 0.25, 0.5 or 1.0 degrees; the frontend sizes the heatmap circles to fill one cell.
+    cell_size_deg: float

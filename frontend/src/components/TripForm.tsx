@@ -11,8 +11,8 @@ import { FormField } from './FormField'
 const FORM_FIELDS: readonly string[] = Object.values(TripPlanField)
 
 type TripFormProps = {
-  // Called with the result after a successful plan; App stores it.
-  onTripPlanned: (tripPlan: TripPlan) => void
+  // Called with the result after a successful plan, plus the weight the heatmap needs; App stores both.
+  onTripPlanned: (tripPlan: TripPlan, weightLb: number) => void
 }
 
 export function TripForm({ onTripPlanned }: TripFormProps) {
@@ -32,16 +32,18 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     setError(null)
     setIsPlanning(true)
 
+    // An empty box becomes 0, which the backend rejects with a message under the field.
+    const weightLb = Number(weightText)
+
     try {
       const tripPlan = await getTripPlan({
         origin: origin.trim(),
         destination: destination.trim(),
         departure: convertDateTimeLocalToIso(departureLocal),
         spacing_mi: spacingMi,
-        // An empty box becomes 0, which the backend rejects with a message under the field.
-        weight_lb: Number(weightText),
+        weight_lb: weightLb,
       })
-      onTripPlanned(tripPlan)
+      onTripPlanned(tripPlan, weightLb)
     } catch (caughtError) {
       // getTripPlan only throws TripPlanError; anything else is an unexpected bug in our own code.
       const unexpectedError = new TripPlanError('Something went wrong. Please try again.', null)

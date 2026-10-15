@@ -43,6 +43,7 @@ def create_trip_plan(
         notes.append(_build_route_count_note(len(planned_routes)))
 
     recommendation = recommend_route(planned_routes)
+    corridor_grid = build_corridor_points(_get_route_geometries(planned_routes))
 
     # Position of each route in the ranking, 1 = recommended; e.g. {"B": 1, "A": 2, "C": 3}.
     rank_by_label = {}
@@ -64,7 +65,9 @@ def create_trip_plan(
         "notes": notes,
         "routes": serialized_routes,
         # Weather points around all routes for the heatmap; the frontend sends them back to /api/heatmap.
-        "corridor_points": build_corridor_points(_get_route_geometries(planned_routes)),
+        "corridor_points": corridor_grid.points,
+        # Grid cell size of those points, so the frontend can size the heatmap circles to fill one cell.
+        "corridor_cell_size_deg": corridor_grid.cell_size_deg,
     }
 
 

@@ -349,8 +349,10 @@ def test_recommends_fastest_route_when_risk_is_equal(monkeypatch):
 
 
 def test_sends_corridor_points_for_the_heatmap():
-    corridor_points = post_trip_plan(VALID_BODY).json()["corridor_points"]
+    trip_plan = post_trip_plan(VALID_BODY).json()
+    corridor_points = trip_plan["corridor_points"]
 
+    assert trip_plan["corridor_cell_size_deg"] == 0.25
     assert len(corridor_points) > 0
     # Each point is [lon, lat], like the route geometry; Dallas lies in the cell centered at (-96.875, 32.875).
     assert [-96.875, 32.875] in corridor_points

@@ -17,6 +17,19 @@ export const ROUTE_SEGMENT_LAYER_ID = 'route-segments-line'
 // Layer that draws the hovered or selected stretch on top, thicker; used by MapView.
 export const ROUTE_SEGMENT_HIGHLIGHT_LAYER_ID = 'route-segment-highlight'
 
+// Name of the heatmap grid points inside MapLibre; used by MapView.
+export const HEATMAP_SOURCE_ID = 'heatmap-points'
+
+// Layer that draws each heatmap point as a soft circle in its risk color, under the routes; used by MapView.
+export const HEATMAP_LAYER_ID = 'heatmap-circles'
+
+// Heatmap circle radius as a share of a grid cell's width; above 1 so the blurred edges of neighbors overlap
+// and blend into one area instead of separate dots; used by getHeatmapRadiusAtZoom0.
+export const HEATMAP_CELL_COVERAGE = 1.25
+
+// Heatmap circle opacity; low enough that the map and routes stay readable underneath; used by MapView.
+export const HEATMAP_OPACITY = 0.45
+
 // Name of the unselected route lines inside MapLibre; used by MapView.
 export const OTHER_ROUTES_SOURCE_ID = 'other-routes'
 

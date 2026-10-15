@@ -8,6 +8,9 @@ import {
   CHECKPOINT_LAYER_ID,
   CHECKPOINT_SOURCE_ID,
   FIT_ANIMATION_MS,
+  HEATMAP_LAYER_ID,
+  HEATMAP_OPACITY,
+  HEATMAP_SOURCE_ID,
   INITIAL_MAP_VIEW,
   MAP_STYLE_URL,
   MAX_ROUTE_FIT_ZOOM,
@@ -29,9 +32,11 @@ import {
   ROUTE_SEGMENT_SOURCE_ID,
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
+import { buildHeatmapPoints, getHeatmapColorExpression, getHeatmapRadiusExpression } from '../lib/heatmapGeometry'
 import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments } from '../lib/routeGeometry'
 import { getRouteById } from '../lib/tripPlanRoutes'
 import { RouteEndpoint } from '../types/routeEndpoint'
+import type { Heatmap, HeatmapStatus } from '../types/heatmap'
 import type { TripPlan } from '../types/tripPlan'
 import { RiskLegend } from './RiskLegend'
 import { RouteEndpointMarker } from './RouteEndpointMarker'
@@ -60,9 +65,13 @@ type MapViewProps = {
   tripPlan: TripPlan | null
   // The route drawn with risk colors ("A", "B" or "C"); the others are drawn gray.
   selectedRouteId: string | null
+  // Weather risk around the routes; null while loading, on failure, or before the first plan.
+  heatmap: Heatmap | null
+  // Where the heatmap request is, shown in the legend; null when there is no plan.
+  heatmapStatus: HeatmapStatus | null
 }
 
-export function MapView({ tripPlan, selectedRouteId }: MapViewProps) {
+export function MapView({ tripPlan, selectedRouteId, heatmap, heatmapStatus }: MapViewProps) {
   // Handle to the MapLibre map, so we can move its camera.
   const mapRef = useRef<MapRef>(null)
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
@@ -79,6 +88,7 @@ export function MapView({ tripPlan, selectedRouteId }: MapViewProps) {
     () => (selectedRoute ? buildCheckpointPoints(selectedRoute.checkpoints) : null),
     [selectedRoute],
   )
+  const heatmapPoints = useMemo(() => (heatmap ? buildHeatmapPoints(heatmap) : null), [heatmap])
   const otherRouteLines = useMemo(
     () => (tripPlan && selectedRouteId ? buildOtherRouteLines(tripPlan.routes, selectedRouteId) : null),
     [tripPlan, selectedRouteId],
@@ -159,6 +169,24 @@ export function MapView({ tripPlan, selectedRouteId }: MapViewProps) {
 
       {/* Layers draw in the order listed: gray other routes, then the selected route's dark outline,
           risk-colored stretches and highlight, then the dots on top. */}
+      {/* Weather heatmap at the bottom: each grid point a soft circle in its risk color (Low is transparent). */}
+      {heatmapPoints && tripPlan && (
+        <Source id={HEATMAP_SOURCE_ID} type="geojson" data={heatmapPoints}>
+          <Layer
+            id={HEATMAP_LAYER_ID}
+            type="circle"
+            paint={{
+              // Hour 0 (now) until the forecast slider exists (step 6.4).
+              'circle-color': getHeatmapColorExpression(0),
+              'circle-radius': getHeatmapRadiusExpression(tripPlan.corridor_cell_size_deg),
+              // Soft edges, so neighboring circles blend into one colored area.
+              'circle-blur': 1,
+              'circle-opacity': HEATMAP_OPACITY,
+            }}
+          />
+        </Source>
+      )}
+
       {otherRouteLines && (
         <Source id={OTHER_ROUTES_SOURCE_ID} type="geojson" data={otherRouteLines}>
           <Layer
@@ -231,7 +259,7 @@ export function MapView({ tripPlan, selectedRouteId }: MapViewProps) {
       )}
 
       {/* Color key, shown once a route is drawn. */}
-      {tripPlan && <RiskLegend />}
+      {tripPlan && <RiskLegend heatmapStatus={heatmapStatus} />}
     </Map>
   )
 }

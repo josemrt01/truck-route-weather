@@ -7,7 +7,7 @@ becomes one heatmap point at the cell's center.
 import math
 
 from trips.constants import MAX_CORRIDOR_POINTS
-from trips.types import LonLat
+from trips.types import CorridorGrid, LonLat
 
 # Grid cell sizes in degrees, tried smallest first (most detail); 0.25 degrees is about 15 miles;
 # used by build_corridor_points.
@@ -22,16 +22,17 @@ NEIGHBOR_CELL_COUNT = 2
 CENTER_DECIMALS = 4
 
 
-def build_corridor_points(route_geometries: list[list[LonLat]]) -> list[LonLat]:
-    """Return heatmap points in a band around the routes, at most MAX_CORRIDOR_POINTS of them."""
+def build_corridor_points(route_geometries: list[list[LonLat]]) -> CorridorGrid:
+    """Return heatmap points in a band around the routes (at most MAX_CORRIDOR_POINTS) and their cell size."""
     # Smallest cells first; grow them until the band fits under the cap.
     for cell_size in CORRIDOR_CELL_SIZES_DEG:
         corridor_cells = _get_corridor_cells(route_geometries, cell_size)
         if len(corridor_cells) <= MAX_CORRIDOR_POINTS:
-            return _get_cell_centers(corridor_cells, cell_size)
+            return CorridorGrid(points=_get_cell_centers(corridor_cells, cell_size), cell_size_deg=cell_size)
 
     # Even the biggest cells are too many (only on extreme trips): keep the first MAX_CORRIDOR_POINTS.
-    return _get_cell_centers(corridor_cells, cell_size)[:MAX_CORRIDOR_POINTS]
+    points = _get_cell_centers(corridor_cells, cell_size)[:MAX_CORRIDOR_POINTS]
+    return CorridorGrid(points=points, cell_size_deg=cell_size)
 
 
 def _get_corridor_cells(route_geometries: list[list[LonLat]], cell_size: float) -> set[tuple[int, int]]:

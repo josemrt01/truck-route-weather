@@ -4,4 +4,6 @@ export const API_ROUTES = {
   HEALTH: '/api/health',
   // Builds a route between two typed places; used by getTripPlan.
   TRIP_PLANS: '/api/trip-plans',
+  // Risk level for every corridor point and forecast hour; used by getHeatmap.
+  HEATMAP: '/api/heatmap',
 } as const

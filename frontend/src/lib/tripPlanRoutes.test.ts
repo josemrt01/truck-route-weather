@@ -13,6 +13,8 @@ const tripPlan: TripPlan = {
   warning: null,
   notes: [],
   routes: [makeRoutePlan({ id: 'A' }), makeRoutePlan({ id: 'B' }), makeRoutePlan({ id: 'C' })],
+  corridor_points: [],
+  corridor_cell_size_deg: 0.25,
 }
 
 describe('getRouteById', () => {

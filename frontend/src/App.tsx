@@ -1,25 +1,44 @@
 import { useEffect, useState } from 'react'
 import { getBackendStatus } from './api/healthApi'
+import { getHeatmap } from './api/heatmapApi'
 import { MapView } from './components/MapView'
 import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
 import { BackendStatus } from './types/backendStatus'
+import { HeatmapStatus, type Heatmap } from './types/heatmap'
 import type { TripPlan } from './types/tripPlan'
+
+// The heatmap and the plan it belongs to; a heatmap for an older plan that answers late is ignored.
+type HeatmapResult = {
+  tripPlan: TripPlan
+  status: HeatmapStatus
+  heatmap: Heatmap | null
+}
 
 function App() {
   const [status, setStatus] = useState<BackendStatus>(BackendStatus.CHECKING)
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null)
   // The route drawn with risk colors; starts as the recommended one, the route cards change it.
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
+  const [heatmapResult, setHeatmapResult] = useState<HeatmapResult | null>(null)
+
+  // Only the heatmap of the current plan counts (same "hide instead of reset" idea as the map popup).
+  const currentHeatmap = heatmapResult?.tripPlan === tripPlan ? heatmapResult : null
 
   // Check the backend once, when the page first loads.
   useEffect(() => {
     getBackendStatus().then(setStatus)
   }, [])
 
-  function handleTripPlanned(newTripPlan: TripPlan) {
+  function handleTripPlanned(newTripPlan: TripPlan, weightLb: number) {
     setTripPlan(newTripPlan)
     setSelectedRouteId(newTripPlan.recommended_route_id)
+    setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.LOADING, heatmap: null })
+
+    // The routes are already on screen; the heatmap arrives after, so routes never wait for it.
+    getHeatmap({ points: newTripPlan.corridor_points, weight_lb: weightLb })
+      .then((heatmap) => setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.READY, heatmap }))
+      .catch(() => setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.FAILED, heatmap: null }))
   }
 
   return (
@@ -27,7 +46,12 @@ function App() {
     // From md (768px) up: map fills the screen, panel floats over it.
     <main className="flex h-screen flex-col md:relative md:block">
       <div className="relative min-h-0 flex-1 md:absolute md:inset-0">
-        <MapView tripPlan={tripPlan} selectedRouteId={selectedRouteId} />
+        <MapView
+          tripPlan={tripPlan}
+          selectedRouteId={selectedRouteId}
+          heatmap={currentHeatmap?.heatmap ?? null}
+          heatmapStatus={currentHeatmap?.status ?? null}
+        />
       </div>
 
       <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-sm md:absolute md:top-3 md:left-3 md:max-h-[calc(100vh-24px)] md:w-80 md:overflow-y-auto md:rounded-lg md:shadow-floating-panel">

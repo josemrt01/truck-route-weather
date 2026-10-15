@@ -78,6 +78,10 @@ export type TripPlan = {
   notes: string[]
   // In A, B, C order (fastest first).
   routes: RoutePlan[]
+  // Grid points around all routes; sent back to /api/heatmap for the weather heatmap.
+  corridor_points: LonLat[]
+  // Grid cell size of those points in degrees (0.25, 0.5 or 1.0); sizes the heatmap circles.
+  corridor_cell_size_deg: number
 }
 
 // Form fields an error can point at; values match the request field names; used by TripPlanError and the trip form.

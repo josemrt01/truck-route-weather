@@ -13,21 +13,24 @@ import {
   MAX_ROUTE_FIT_ZOOM,
   NARROW_SCREEN_QUERY,
   ROUTE_FIT_PADDING,
+  ROUTE_CASING_COLOR,
+  ROUTE_CASING_LAYER_ID,
+  ROUTE_CASING_WIDTH,
   ROUTE_FIT_PADDING_NARROW,
-  ROUTE_LINE_COLOR,
   ROUTE_LINE_WIDTH,
-  ROUTE_SEGMENT_HIGHLIGHT_COLOR,
+  ROUTE_SEGMENT_COLOR_EXPRESSION,
   ROUTE_SEGMENT_HIGHLIGHT_LAYER_ID,
   ROUTE_SEGMENT_HIGHLIGHT_WIDTH,
   ROUTE_SEGMENT_LAYER_ID,
   ROUTE_SEGMENT_SOURCE_ID,
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
-import { formatEta } from '../lib/formatters'
 import { buildCheckpointPoints, buildRouteSegments } from '../lib/routeGeometry'
 import { RouteEndpoint } from '../types/routeEndpoint'
 import type { TripPlan } from '../types/tripPlan'
+import { RiskLegend } from './RiskLegend'
 import { RouteEndpointMarker } from './RouteEndpointMarker'
+import { SegmentDetails } from './SegmentDetails'
 // Runs once to tell MapLibre where its worker file is; must load before any map is created.
 import '../lib/maplibreWorker'
 
@@ -131,23 +134,30 @@ export function MapView({ tripPlan }: MapViewProps) {
       {/* Zoom +/- buttons and compass. */}
       <NavigationControl position="top-right" />
 
-      {/* Layers draw in the order listed: stretches, then the highlight, then the dots on top. */}
+      {/* Layers draw in the order listed: dark outline, risk-colored stretches, the highlight, then the dots on top. */}
       {routeSegments && (
         <Source id={ROUTE_SEGMENT_SOURCE_ID} type="geojson" data={routeSegments}>
           <Layer
-            id={ROUTE_SEGMENT_LAYER_ID}
+            id={ROUTE_CASING_LAYER_ID}
             type="line"
             // Round joins and caps keep corners and stretch ends smooth.
             layout={{ 'line-join': 'round', 'line-cap': 'round' }}
-            paint={{ 'line-color': ROUTE_LINE_COLOR, 'line-width': ROUTE_LINE_WIDTH }}
+            paint={{ 'line-color': ROUTE_CASING_COLOR, 'line-width': ROUTE_CASING_WIDTH }}
+          />
+          <Layer
+            id={ROUTE_SEGMENT_LAYER_ID}
+            type="line"
+            layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+            // Each stretch takes the color of its risk level.
+            paint={{ 'line-color': ROUTE_SEGMENT_COLOR_EXPRESSION, 'line-width': ROUTE_LINE_WIDTH }}
           />
           <Layer
             id={ROUTE_SEGMENT_HIGHLIGHT_LAYER_ID}
             type="line"
-            // Draw only the stretch whose index matches the hovered or selected one.
+            // Draw only the stretch whose index matches the hovered or selected one, thicker in its own color.
             filter={['==', ['get', 'index'], highlightedSegmentIndex]}
             layout={{ 'line-join': 'round', 'line-cap': 'round' }}
-            paint={{ 'line-color': ROUTE_SEGMENT_HIGHLIGHT_COLOR, 'line-width': ROUTE_SEGMENT_HIGHLIGHT_WIDTH }}
+            paint={{ 'line-color': ROUTE_SEGMENT_COLOR_EXPRESSION, 'line-width': ROUTE_SEGMENT_HIGHLIGHT_WIDTH }}
           />
         </Source>
       )}
@@ -170,7 +180,7 @@ export function MapView({ tripPlan }: MapViewProps) {
         </>
       )}
 
-      {/* Basic info for the clicked stretch; slice 4 adds the weather. */}
+      {/* Miles, times, risk and weather for the clicked stretch. */}
       {visibleSegment && segmentStart && segmentEnd && (
         <Popup
           longitude={visibleSegment.lon}
@@ -181,16 +191,12 @@ export function MapView({ tripPlan }: MapViewProps) {
           closeOnClick={false}
           onClose={() => setSelectedSegment(null)}
         >
-          <div className="flex flex-col text-sm">
-            <strong>
-              Miles {segmentStart.mile}–{segmentEnd.mile}
-            </strong>
-            <span>
-              {formatEta(segmentStart.eta_utc)} – {formatEta(segmentEnd.eta_utc)}
-            </span>
-          </div>
+          <SegmentDetails start={segmentStart} end={segmentEnd} />
         </Popup>
       )}
+
+      {/* Color key, shown once a route is drawn. */}
+      {tripPlan && <RiskLegend />}
     </Map>
   )
 }

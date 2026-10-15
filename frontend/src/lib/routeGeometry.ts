@@ -1,8 +1,10 @@
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson'
+import type { RiskLevel } from '../types/risk'
 import type { Checkpoint, LonLat } from '../types/tripPlan'
 
-// Properties on each route stretch feature; index N is the stretch from checkpoint N to checkpoint N+1.
-export type RouteSegmentProperties = { index: number }
+// Properties on each route stretch feature; index N is the stretch from checkpoint N to checkpoint N+1,
+// and level is the risk level that colors it.
+export type RouteSegmentProperties = { index: number; level: RiskLevel }
 
 // Cuts the route line into stretches that run from one checkpoint to the next.
 export function buildRouteSegments(
@@ -19,9 +21,13 @@ export function buildRouteSegments(
     // up to and including the end's previous point.
     const pointsBetween = geometry.slice(start.previous_point_index + 1, end.previous_point_index + 1)
 
+    // Same rule as the backend summary: a stretch is as risky as its worse end.
+    // Math.max returns a plain number, so tell TypeScript it is still a RiskLevel (0-4).
+    const level = Math.max(start.level, end.level) as RiskLevel
+
     features.push({
       type: 'Feature',
-      properties: { index },
+      properties: { index, level },
       geometry: { type: 'LineString', coordinates: [[start.lon, start.lat], ...pointsBetween, [end.lon, end.lat]] },
     })
   }
@@ -38,4 +44,13 @@ export function buildCheckpointPoints(checkpoints: Checkpoint[]): FeatureCollect
       geometry: { type: 'Point', coordinates: [checkpoint.lon, checkpoint.lat] },
     })),
   }
+}
+
+// The end of a stretch that gave it its color; on a tie, the start.
+export function getWorseCheckpoint(start: Checkpoint, end: Checkpoint): Checkpoint {
+  if (end.level > start.level) {
+    return end
+  }
+
+  return start
 }

@@ -1,3 +1,5 @@
+import type { RiskCause, RiskLevel } from './risk'
+
 // A point as [longitude, latitude], the order GeoJSON and MapLibre use; matches the backend's LonLat.
 export type LonLat = [number, number]
 
@@ -16,6 +18,23 @@ export type Checkpoint = {
   eta_utc: string
   // Index of the last route geometry point before this checkpoint; used to cut the route line at checkpoints.
   previous_point_index: number
+  // The forecast hour whose weather was used (the full hour nearest the ETA), ISO time in UTC.
+  forecast_hour_utc: string
+  wind_gust_mph: number
+  wind_speed_mph: number
+  rain_in_hr: number
+  snow_in_hr: number
+  level: RiskLevel
+  cause: RiskCause
+}
+
+// Miles driven at each risk level; keys match RiskLevel names in the backend, lowercased.
+export type MilesByLevel = {
+  low: number
+  moderate: number
+  high: number
+  severe: number
+  no_travel: number
 }
 
 // Body of POST /api/trip-plans; matches TripPlanRequestSerializer in the backend.
@@ -38,6 +57,10 @@ export type TripPlan = {
     distance_mi: number
     duration_s: number
     arrival_utc: string
+    miles_by_level: MilesByLevel
+    // Mileage-weighted average level, from 0 (all Low) to 4 (all No Travel).
+    avg_risk: number
+    worst_level: RiskLevel
     checkpoints: Checkpoint[]
   }
 }

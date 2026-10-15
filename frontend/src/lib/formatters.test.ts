@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDistance, formatDuration, formatEta } from './formatters'
+import { formatDistance, formatDuration, formatEta, formatPrecipitationRate, formatSpeed } from './formatters'
 
 describe('formatDistance', () => {
   it('shows one decimal and the unit', () => {
@@ -30,5 +30,17 @@ describe('formatEta', () => {
 
   it('uses the local day when UTC has already moved to the next day', () => {
     expect(formatEta('2026-10-14T04:40:00Z')).toBe('Tue 11:40 PM')
+  })
+})
+
+describe('formatSpeed', () => {
+  it('shows whole miles per hour', () => {
+    expect(formatSpeed(38.4)).toBe('38 mph')
+  })
+})
+
+describe('formatPrecipitationRate', () => {
+  it('shows two decimals and the unit', () => {
+    expect(formatPrecipitationRate(0.05)).toBe('0.05 in/hr')
   })
 })

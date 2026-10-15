@@ -21,3 +21,13 @@ const ETA_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'short', hour: 'n
 export function formatEta(isoUtc: string): string {
   return ETA_FORMAT.format(new Date(isoUtc))
 }
+
+// Whole miles per hour, e.g. "38 mph".
+export function formatSpeed(mph: number): string {
+  return `${Math.round(mph)} mph`
+}
+
+// Inches per hour with two decimals, e.g. "0.05 in/hr"; rain risk thresholds start at 0.10.
+export function formatPrecipitationRate(inchesPerHour: number): string {
+  return `${inchesPerHour.toFixed(2)} in/hr`
+}

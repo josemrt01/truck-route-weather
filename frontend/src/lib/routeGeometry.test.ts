@@ -1,10 +1,29 @@
 import { describe, expect, it } from 'vitest'
+import { RiskCause, RiskLevel } from '../types/risk'
 import type { Checkpoint, LonLat } from '../types/tripPlan'
-import { buildCheckpointPoints, buildRouteSegments } from './routeGeometry'
+import { buildCheckpointPoints, buildRouteSegments, getWorseCheckpoint } from './routeGeometry'
 
-// Builds a checkpoint for the tests; only position and previous_point_index matter here.
-function makeCheckpoint(lon: number, lat: number, previousPointIndex: number): Checkpoint {
-  return { mile: 0, lon, lat, eta_utc: '2026-10-13T13:00:00Z', previous_point_index: previousPointIndex }
+// Builds a checkpoint for the tests; position, previous_point_index and level matter, the weather is calm.
+function makeCheckpoint(
+  lon: number,
+  lat: number,
+  previousPointIndex: number,
+  level: RiskLevel = RiskLevel.LOW,
+): Checkpoint {
+  return {
+    mile: 0,
+    lon,
+    lat,
+    eta_utc: '2026-10-13T13:00:00Z',
+    previous_point_index: previousPointIndex,
+    forecast_hour_utc: '2026-10-13T13:00:00Z',
+    wind_gust_mph: 0,
+    wind_speed_mph: 0,
+    rain_in_hr: 0,
+    snow_in_hr: 0,
+    level,
+    cause: RiskCause.NONE,
+  }
 }
 
 describe('buildRouteSegments', () => {
@@ -47,6 +66,36 @@ describe('buildRouteSegments', () => {
       [12, 0],
       [18, 0],
     ])
+  })
+})
+
+describe('buildRouteSegments risk level', () => {
+  it('colors a stretch by the worse of its two ends', () => {
+    const route: LonLat[] = [
+      [0, 0],
+      [10, 0],
+    ]
+    const checkpoints = [makeCheckpoint(0, 0, 0, RiskLevel.LOW), makeCheckpoint(10, 0, 0, RiskLevel.SEVERE)]
+
+    const segments = buildRouteSegments(route, checkpoints)
+
+    expect(segments.features[0].properties.level).toBe(RiskLevel.SEVERE)
+  })
+})
+
+describe('getWorseCheckpoint', () => {
+  it('returns the end when it is worse', () => {
+    const start = makeCheckpoint(0, 0, 0, RiskLevel.MODERATE)
+    const end = makeCheckpoint(10, 0, 0, RiskLevel.HIGH)
+
+    expect(getWorseCheckpoint(start, end)).toBe(end)
+  })
+
+  it('returns the start on a tie', () => {
+    const start = makeCheckpoint(0, 0, 0, RiskLevel.HIGH)
+    const end = makeCheckpoint(10, 0, 0, RiskLevel.HIGH)
+
+    expect(getWorseCheckpoint(start, end)).toBe(start)
   })
 })
 

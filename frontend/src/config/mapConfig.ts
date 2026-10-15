@@ -1,3 +1,7 @@
+import type { ExpressionSpecification } from 'maplibre-gl'
+import { RiskLevel } from '../types/risk'
+import { RISK_LEVEL_COLORS } from './riskConfig'
+
 // Map look (OpenFreeMap "liberty" vector style, no API key); used by MapView.
 export const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
 
@@ -19,16 +23,40 @@ export const CHECKPOINT_SOURCE_ID = 'checkpoints'
 // Layer that draws a small dot at each checkpoint; used by MapView.
 export const CHECKPOINT_LAYER_ID = 'checkpoint-dots'
 
-// Route line color; a JS value because MapLibre paints on a canvas and can't read CSS variables; used by MapView.
-export const ROUTE_LINE_COLOR = '#0969da'
+// Layer that draws a dark outline under the route; used by MapView.
+export const ROUTE_CASING_LAYER_ID = 'route-casing'
+
+// Color of the line for a level the frontend doesn't know (shouldn't happen); used by ROUTE_SEGMENT_COLOR_EXPRESSION.
+const UNKNOWN_LEVEL_COLOR = '#8c959f'
+
+// MapLibre picks each segment's color from its "level" property, like a switch statement with a default;
+// used by MapView for the route and the highlight.
+export const ROUTE_SEGMENT_COLOR_EXPRESSION: ExpressionSpecification = [
+  'match',
+  ['get', 'level'],
+  RiskLevel.LOW,
+  RISK_LEVEL_COLORS[RiskLevel.LOW],
+  RiskLevel.MODERATE,
+  RISK_LEVEL_COLORS[RiskLevel.MODERATE],
+  RiskLevel.HIGH,
+  RISK_LEVEL_COLORS[RiskLevel.HIGH],
+  RiskLevel.SEVERE,
+  RISK_LEVEL_COLORS[RiskLevel.SEVERE],
+  RiskLevel.NO_TRAVEL,
+  RISK_LEVEL_COLORS[RiskLevel.NO_TRAVEL],
+  UNKNOWN_LEVEL_COLOR,
+]
+
+// Dark outline color under the route, so yellow and green stand out on the light map; used by MapView.
+export const ROUTE_CASING_COLOR = '#1f2328'
+
+// Outline thickness in pixels; wider than ROUTE_LINE_WIDTH so a thin dark border shows on each side; used by MapView.
+export const ROUTE_CASING_WIDTH = 8
 
 // Route line thickness in pixels; used by MapView.
 export const ROUTE_LINE_WIDTH = 5
 
-// Color of the hovered or selected route stretch (a darker blue); used by MapView.
-export const ROUTE_SEGMENT_HIGHLIGHT_COLOR = '#0550ae'
-
-// Thickness in pixels of the hovered or selected route stretch; used by MapView.
+// Thickness in pixels of the hovered or selected route stretch, drawn in its own risk color; used by MapView.
 export const ROUTE_SEGMENT_HIGHLIGHT_WIDTH = 9
 
 // Checkpoint dot color, white so it shows on any route color; used by MapView.
@@ -59,5 +87,5 @@ export const MAX_ROUTE_FIT_ZOOM = 9
 // Start pin color (dark slate, apart from the risk colors); used by RouteEndpointMarker.
 export const START_MARKER_COLOR = '#1f2328'
 
-// End pin color, the same blue as the route line; used by RouteEndpointMarker.
-export const END_MARKER_COLOR = ROUTE_LINE_COLOR
+// End pin color (blue, apart from the risk colors); used by RouteEndpointMarker.
+export const END_MARKER_COLOR = '#0969da'

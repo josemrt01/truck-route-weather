@@ -314,3 +314,14 @@ def test_notes_when_fewer_than_three_routes(monkeypatch, route_seconds, expected
     response = post_trip_plan(VALID_BODY)
 
     assert response.json()["notes"] == expected_notes
+
+
+def test_recommends_fastest_route_when_risk_is_equal(monkeypatch):
+    # The fake weather makes every route Severe all the way, so only duration separates them.
+    fake_routes_with_times(monkeypatch, [14_400, 12_420, 18_000])
+
+    trip_plan = post_trip_plan(VALID_BODY).json()
+
+    assert trip_plan["recommended_route_id"] == "A"
+    assert trip_plan["reason"] == "Routes A and B have equal risk; Route A is faster."
+    assert trip_plan["warning"] is None

@@ -10,6 +10,7 @@ from trips.exceptions import PlaceNotFoundError
 from trips.logic.checkpoint_builder import build_checkpoints, build_route_progress
 from trips.logic.risk_calculator import calculate_risk
 from trips.logic.risk_summary_builder import build_risk_summary
+from trips.logic.route_recommender import recommend_route
 from trips.logic.weather_lookup import get_weather_at, round_to_nearest_hour
 from trips.types import AssessedCheckpoint, Checkpoint, Place, PlannedRoute, RiskLevel, Route
 
@@ -39,10 +40,15 @@ def create_trip_plan(
     if len(planned_routes) < ROUTE_COUNT:
         notes.append(_build_route_count_note(len(planned_routes)))
 
+    recommendation = recommend_route(planned_routes)
+
     return {
         "origin": asdict(origin),
         "destination": asdict(destination),
         "departure_utc": _format_utc(departure_utc),
+        "recommended_route_id": recommendation.ranked_routes[0].label,
+        "reason": recommendation.reason,
+        "warning": recommendation.warning,
         "notes": notes,
         # Until the frontend shows every route (step 5.4), send only the fastest one (A).
         "route": _serialize_route(planned_routes[0]),

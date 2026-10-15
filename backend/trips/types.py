@@ -147,3 +147,14 @@ class PlannedRoute:
     progress: RouteProgress
     assessed_checkpoints: list[AssessedCheckpoint]
     risk_summary: RouteRiskSummary
+
+
+@dataclass(frozen=True)
+class Recommendation:
+    """Routes ranked best first, and why the first one wins; returned by route_recommender."""
+
+    # Best first; the first one is the recommended route.
+    ranked_routes: list[PlannedRoute]
+    reason: str
+    # Set only when every route crosses No Travel conditions.
+    warning: str | None

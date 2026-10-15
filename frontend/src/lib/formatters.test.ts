@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { formatDistance, formatDuration, formatEta, formatPrecipitationRate, formatSpeed } from './formatters'
+import {
+  formatDistance,
+  formatDuration,
+  formatEta,
+  formatForecastHourLabel,
+  formatPrecipitationRate,
+  formatSpeed,
+} from './formatters'
 
 describe('formatDistance', () => {
   it('shows one decimal and the unit', () => {
@@ -42,5 +49,21 @@ describe('formatSpeed', () => {
 describe('formatPrecipitationRate', () => {
   it('shows two decimals and the unit', () => {
     expect(formatPrecipitationRate(0.05)).toBe('0.05 in/hr')
+  })
+})
+
+// Tests run in America/Chicago (UTC-5 in October), so 13:00 UTC is 8:00 AM local.
+describe('formatForecastHourLabel', () => {
+  it('shows hour 0 as now', () => {
+    expect(formatForecastHourLabel('2026-10-13T13:00:00Z', 0)).toBe('+0h · Tue 8:00 AM')
+  })
+
+  it('adds the hours to the start hour', () => {
+    expect(formatForecastHourLabel('2026-10-13T13:00:00Z', 6)).toBe('+6h · Tue 2:00 PM')
+  })
+
+  it('uses the local day when UTC has already moved to the next day', () => {
+    // 13:00 UTC + 15 h = 04:00 UTC on Wednesday, still 11:00 PM on Tuesday in Chicago.
+    expect(formatForecastHourLabel('2026-10-13T13:00:00Z', 15)).toBe('+15h · Tue 11:00 PM')
   })
 })

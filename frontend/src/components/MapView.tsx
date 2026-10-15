@@ -36,9 +36,8 @@ import { buildHeatmapPoints, getHeatmapColorExpression, getHeatmapRadiusExpressi
 import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments } from '../lib/routeGeometry'
 import { getRouteById } from '../lib/tripPlanRoutes'
 import { RouteEndpoint } from '../types/routeEndpoint'
-import type { Heatmap, HeatmapStatus } from '../types/heatmap'
+import type { Heatmap } from '../types/heatmap'
 import type { TripPlan } from '../types/tripPlan'
-import { RiskLegend } from './RiskLegend'
 import { RouteEndpointMarker } from './RouteEndpointMarker'
 import { SegmentDetails } from './SegmentDetails'
 // Runs once to tell MapLibre where its worker file is; must load before any map is created.
@@ -67,11 +66,11 @@ type MapViewProps = {
   selectedRouteId: string | null
   // Weather risk around the routes; null while loading, on failure, or before the first plan.
   heatmap: Heatmap | null
-  // Where the heatmap request is, shown in the legend; null when there is no plan.
-  heatmapStatus: HeatmapStatus | null
+  // Forecast hour the heatmap shows: 0 = now, up to 48; set by the forecast slider.
+  forecastHour: number
 }
 
-export function MapView({ tripPlan, selectedRouteId, heatmap, heatmapStatus }: MapViewProps) {
+export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: MapViewProps) {
   // Handle to the MapLibre map, so we can move its camera.
   const mapRef = useRef<MapRef>(null)
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
@@ -176,8 +175,8 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, heatmapStatus }: M
             id={HEATMAP_LAYER_ID}
             type="circle"
             paint={{
-              // Hour 0 (now) until the forecast slider exists (step 6.4).
-              'circle-color': getHeatmapColorExpression(0),
+              // Only this rule changes when the slider moves; the points themselves stay loaded.
+              'circle-color': getHeatmapColorExpression(forecastHour),
               'circle-radius': getHeatmapRadiusExpression(tripPlan.corridor_cell_size_deg),
               // Soft edges, so neighboring circles blend into one colored area.
               'circle-blur': 1,
@@ -258,8 +257,6 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, heatmapStatus }: M
         </Popup>
       )}
 
-      {/* Color key, shown once a route is drawn. */}
-      {tripPlan && <RiskLegend heatmapStatus={heatmapStatus} />}
     </Map>
   )
 }

@@ -31,3 +31,12 @@ export function formatSpeed(mph: number): string {
 export function formatPrecipitationRate(inchesPerHour: number): string {
   return `${inchesPerHour.toFixed(2)} in/hr`
 }
+
+// Milliseconds in one hour; used by formatForecastHourLabel.
+const MILLISECONDS_PER_HOUR = 60 * 60 * 1000
+
+// Hours from now and the local time of that forecast hour, e.g. "+6h · Tue 2:00 PM".
+export function formatForecastHourLabel(startHourUtc: string, hour: number): string {
+  const forecastTime = new Date(new Date(startHourUtc).getTime() + hour * MILLISECONDS_PER_HOUR)
+  return `+${hour}h · ${formatEta(forecastTime.toISOString())}`
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getBackendStatus } from './api/healthApi'
 import { getHeatmap } from './api/heatmapApi'
+import { ForecastSlider } from './components/ForecastSlider'
 import { MapView } from './components/MapView'
 import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
@@ -21,6 +22,8 @@ function App() {
   // The route drawn with risk colors; starts as the recommended one, the route cards change it.
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
   const [heatmapResult, setHeatmapResult] = useState<HeatmapResult | null>(null)
+  // Forecast hour the heatmap shows: 0 = now, up to 48; the forecast slider changes it.
+  const [forecastHour, setForecastHour] = useState(0)
 
   // Only the heatmap of the current plan counts (same "hide instead of reset" idea as the map popup).
   const currentHeatmap = heatmapResult?.tripPlan === tripPlan ? heatmapResult : null
@@ -34,6 +37,8 @@ function App() {
     setTripPlan(newTripPlan)
     setSelectedRouteId(newTripPlan.recommended_route_id)
     setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.LOADING, heatmap: null })
+    // Each new plan starts at "now".
+    setForecastHour(0)
 
     // The routes are already on screen; the heatmap arrives after, so routes never wait for it.
     getHeatmap({ points: newTripPlan.corridor_points, weight_lb: weightLb })
@@ -50,8 +55,16 @@ function App() {
           tripPlan={tripPlan}
           selectedRouteId={selectedRouteId}
           heatmap={currentHeatmap?.heatmap ?? null}
-          heatmapStatus={currentHeatmap?.status ?? null}
+          forecastHour={forecastHour}
         />
+        {tripPlan && (
+          <ForecastSlider
+            hour={forecastHour}
+            onHourChange={setForecastHour}
+            heatmap={currentHeatmap?.heatmap ?? null}
+            heatmapStatus={currentHeatmap?.status ?? null}
+          />
+        )}
       </div>
 
       <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-sm md:absolute md:top-3 md:left-3 md:max-h-[calc(100vh-24px)] md:w-80 md:overflow-y-auto md:rounded-lg md:shadow-floating-panel">

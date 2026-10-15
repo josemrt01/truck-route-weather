@@ -39,3 +39,10 @@ export function formatForecastHourLabel(startHourUtc: string, hour: number): str
   const forecastTime = getForecastHourTime(startHourUtc, hour)
   return `+${hour}h · ${formatEta(forecastTime.toISOString())}`
 }
+
+// Hours from the slider's start with at most one decimal, e.g. "+3.5h" or "+0h".
+export function formatHourOffset(hours: number): string {
+  // Multiply, round, divide: keeps one decimal and drops ".0" (3.0 shows as 3).
+  const roundedHours = Math.round(hours * 10) / 10
+  return `+${roundedHours}h`
+}

@@ -100,11 +100,11 @@ export const FIT_ANIMATION_MS = 1000
 export const NARROW_SCREEN_QUERY = '(max-width: 767px)'
 
 // Pixels kept around the route when zooming to it, so the start and end pins aren't at the edge;
-// left also clears the side panel (12px gap + 320px panel); used by MapView.
-export const ROUTE_FIT_PADDING = { top: 100, right: 100, bottom: 100, left: 432 }
+// left clears the side panel (12px gap + 320px panel), bottom clears the forecast slider; used by MapView.
+export const ROUTE_FIT_PADDING = { top: 100, right: 100, bottom: 180, left: 432 }
 
 // Same as ROUTE_FIT_PADDING on narrow screens, where the panel sits above the map; used by MapView.
-export const ROUTE_FIT_PADDING_NARROW = { top: 100, right: 100, bottom: 100, left: 100 }
+export const ROUTE_FIT_PADDING_NARROW = { top: 60, right: 40, bottom: 180, left: 40 }
 
 // Closest zoom when fitting a route, so short trips keep their surroundings in view; used by MapView.
 export const MAX_ROUTE_FIT_ZOOM = 9

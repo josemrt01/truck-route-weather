@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { convertDateTimeLocalToIso, getDateTimeLocalValue } from './dateTime'
+import { convertDateTimeLocalToIso, getDateTimeLocalValue, getTripHourRange } from './dateTime'
 
 // Tests run in America/Chicago (see vite.config.ts), which is UTC-5 in October.
 describe('getDateTimeLocalValue', () => {
@@ -23,5 +23,41 @@ describe('convertDateTimeLocalToIso', () => {
     const date = new Date(2026, 11, 31, 23, 59)
 
     expect(convertDateTimeLocalToIso(getDateTimeLocalValue(date))).toBe(date.toISOString())
+  })
+})
+
+describe('getTripHourRange', () => {
+  // The slider's hour 0; tests place departure and arrival relative to it.
+  const SLIDER_START = '2026-10-13T13:00:00Z'
+
+  it('places a trip inside the window in hours from hour 0', () => {
+    // Departs 13:00, arrives 16:30: hours 0 to 3.5.
+    expect(getTripHourRange(SLIDER_START, '2026-10-13T13:00:00Z', '2026-10-13T16:30:00Z', 48)).toEqual({
+      startHour: 0,
+      endHour: 3.5,
+    })
+  })
+
+  it('places a later departure further along', () => {
+    // Departs 15 hours after hour 0.
+    expect(getTripHourRange(SLIDER_START, '2026-10-14T04:00:00Z', '2026-10-14T07:30:00Z', 48)).toEqual({
+      startHour: 15,
+      endHour: 18.5,
+    })
+  })
+
+  it('stops a trip that runs past the window at the last hour', () => {
+    expect(getTripHourRange(SLIDER_START, '2026-10-15T09:00:00Z', '2026-10-15T20:00:00Z', 48)).toEqual({
+      startHour: 44,
+      endHour: 48,
+    })
+  })
+
+  it('starts at hour 0 when the departure was a few minutes before it', () => {
+    expect(getTripHourRange(SLIDER_START, '2026-10-13T12:50:00Z', '2026-10-13T16:00:00Z', 48)?.startHour).toBe(0)
+  })
+
+  it('is null when the trip starts after the window', () => {
+    expect(getTripHourRange(SLIDER_START, '2026-10-16T13:00:00Z', '2026-10-16T17:00:00Z', 48)).toBeNull()
   })
 })

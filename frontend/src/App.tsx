@@ -5,6 +5,7 @@ import { ForecastSlider } from './components/ForecastSlider'
 import { MapView } from './components/MapView'
 import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
+import { getRouteById } from './lib/tripPlanRoutes'
 import { BackendStatus } from './types/backendStatus'
 import { HeatmapStatus, type Heatmap } from './types/heatmap'
 import type { TripPlan } from './types/tripPlan'
@@ -24,6 +25,8 @@ function App() {
   const [heatmapResult, setHeatmapResult] = useState<HeatmapResult | null>(null)
   // Forecast hour the heatmap shows: 0 = now, up to 48; the forecast slider changes it.
   const [forecastHour, setForecastHour] = useState(0)
+
+  const selectedRoute = tripPlan && selectedRouteId ? getRouteById(tripPlan, selectedRouteId) : null
 
   // Only the heatmap of the current plan counts (same "hide instead of reset" idea as the map popup).
   const currentHeatmap = heatmapResult?.tripPlan === tripPlan ? heatmapResult : null
@@ -57,12 +60,15 @@ function App() {
           heatmap={currentHeatmap?.heatmap ?? null}
           forecastHour={forecastHour}
         />
-        {tripPlan && (
+        {tripPlan && selectedRoute && (
           <ForecastSlider
             hour={forecastHour}
             onHourChange={setForecastHour}
             heatmap={currentHeatmap?.heatmap ?? null}
             heatmapStatus={currentHeatmap?.status ?? null}
+            routeId={selectedRoute.id}
+            departureUtc={tripPlan.departure_utc}
+            arrivalUtc={selectedRoute.arrival_utc}
           />
         )}
       </div>

@@ -28,3 +28,31 @@ const MILLISECONDS_PER_HOUR = 60 * 60 * 1000
 export function getForecastHourTime(startHourUtc: string, hour: number): Date {
   return new Date(new Date(startHourUtc).getTime() + hour * MILLISECONDS_PER_HOUR)
 }
+
+// Part of the forecast window the trip covers, in hours from hour 0 (may be fractional, e.g. 3.5).
+export type TripHourRange = {
+  startHour: number
+  endHour: number
+}
+
+// Where the trip falls on the 0-lastHour forecast slider; null when it starts after the slider's last hour.
+// Hours outside the slider are clamped to its ends, so a trip running past +48h stops at +48h.
+export function getTripHourRange(
+  startHourUtc: string,
+  departureUtc: string,
+  arrivalUtc: string,
+  lastHour: number,
+): TripHourRange | null {
+  const sliderStart = new Date(startHourUtc).getTime()
+  const departureHour = (new Date(departureUtc).getTime() - sliderStart) / MILLISECONDS_PER_HOUR
+  const arrivalHour = (new Date(arrivalUtc).getTime() - sliderStart) / MILLISECONDS_PER_HOUR
+
+  if (departureHour > lastHour) {
+    return null
+  }
+
+  return {
+    startHour: Math.max(departureHour, 0),
+    endHour: Math.min(arrivalHour, lastHour),
+  }
+}

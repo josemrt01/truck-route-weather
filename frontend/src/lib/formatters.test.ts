@@ -4,6 +4,7 @@ import {
   formatDuration,
   formatEta,
   formatForecastHourLabel,
+  formatHourOffset,
   formatPrecipitationRate,
   formatSpeed,
 } from './formatters'
@@ -65,5 +66,16 @@ describe('formatForecastHourLabel', () => {
   it('uses the local day when UTC has already moved to the next day', () => {
     // 13:00 UTC + 15 h = 04:00 UTC on Wednesday, still 11:00 PM on Tuesday in Chicago.
     expect(formatForecastHourLabel('2026-10-13T13:00:00Z', 15)).toBe('+15h · Tue 11:00 PM')
+  })
+})
+
+describe('formatHourOffset', () => {
+  it('keeps one decimal', () => {
+    expect(formatHourOffset(3.4567)).toBe('+3.5h')
+  })
+
+  it('drops a trailing .0', () => {
+    expect(formatHourOffset(0)).toBe('+0h')
+    expect(formatHourOffset(15)).toBe('+15h')
   })
 })

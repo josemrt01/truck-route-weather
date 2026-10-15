@@ -28,20 +28,23 @@ def fixed_now(monkeypatch):
     monkeypatch.setattr(timezone, "now", lambda: FIXED_NOW)
 
 
+def build_straight_route(origin, destination, time_s):
+    """A fake two-point route between origin and destination that takes time_s seconds."""
+    return Route(
+        geometry=[origin, destination],
+        distance_m=385_000,
+        time_s=time_s,
+        time_intervals=[TimeInterval(start_index=0, end_index=1, seconds=time_s)],
+    )
+
+
 @pytest.fixture(autouse=True)
 def fake_graphhopper(monkeypatch):
     monkeypatch.setattr(trip_plan_service, "get_coordinates_from_text", PLACES_BY_TEXT.get)
     monkeypatch.setattr(
         trip_plan_service,
         "get_routes",
-        lambda origin, destination: [
-            Route(
-                geometry=[origin, destination],
-                distance_m=385_000,
-                time_s=12_420.4,
-                time_intervals=[TimeInterval(start_index=0, end_index=1, seconds=12_420.4)],
-            )
-        ],
+        lambda origin, destination: [build_straight_route(origin, destination, 12_420.4)],
     )
 
 
@@ -269,3 +272,45 @@ def test_reports_weather_failure_as_service_unavailable(monkeypatch):
         "error": "The weather service is unavailable. Please try again in a minute.",
         "field": None,
     }
+
+
+def fake_routes_with_times(monkeypatch, route_seconds):
+    """Make the fake GraphHopper return one straight route per entry in route_seconds, in that order."""
+
+    def get_fake_routes(origin, destination):
+        return [build_straight_route(origin, destination, seconds) for seconds in route_seconds]
+
+    monkeypatch.setattr(trip_plan_service, "get_routes", get_fake_routes)
+
+
+def test_sends_the_fastest_route_first(monkeypatch):
+    # GraphHopper's order: 4 h, 3 h 27 min, 5 h.
+    fake_routes_with_times(monkeypatch, [14_400, 12_420, 18_000])
+
+    response = post_trip_plan(VALID_BODY)
+
+    assert response.json()["route"]["duration_s"] == 12_420
+
+
+def test_asks_for_weather_once_per_route(monkeypatch, fake_open_meteo):
+    fake_routes_with_times(monkeypatch, [14_400, 12_420, 18_000])
+
+    post_trip_plan(VALID_BODY)
+
+    assert len(fake_open_meteo) == 3
+
+
+@pytest.mark.parametrize(
+    ("route_seconds", "expected_notes"),
+    [
+        ([12_420, 14_400, 18_000], []),
+        ([12_420, 14_400], ["Only 2 routes found between these places."]),
+        ([12_420], ["Only 1 route found between these places."]),
+    ],
+)
+def test_notes_when_fewer_than_three_routes(monkeypatch, route_seconds, expected_notes):
+    fake_routes_with_times(monkeypatch, route_seconds)
+
+    response = post_trip_plan(VALID_BODY)
+
+    assert response.json()["notes"] == expected_notes

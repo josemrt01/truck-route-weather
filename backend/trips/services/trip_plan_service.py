@@ -5,13 +5,13 @@ from datetime import UTC, datetime
 
 from trips.clients.graphhopper_client import get_coordinates_from_text, get_routes
 from trips.clients.open_meteo_client import get_hourly_forecasts
-from trips.constants import MILE_DECIMALS
+from trips.constants import MILE_DECIMALS, ROUTE_COUNT, ROUTE_LABELS
 from trips.exceptions import PlaceNotFoundError
 from trips.logic.checkpoint_builder import build_checkpoints, build_route_progress
 from trips.logic.risk_calculator import calculate_risk
 from trips.logic.risk_summary_builder import build_risk_summary
 from trips.logic.weather_lookup import get_weather_at, round_to_nearest_hour
-from trips.types import AssessedCheckpoint, Checkpoint, Place, RiskLevel
+from trips.types import AssessedCheckpoint, Checkpoint, Place, PlannedRoute, RiskLevel, Route
 
 # Decimal places kept for checkpoint coordinates (about 1 meter); keeps the JSON small.
 COORDINATE_DECIMALS = 5
@@ -24,33 +24,76 @@ def create_trip_plan(
     origin = _get_place_or_raise(origin_text, field="origin")
     destination = _get_place_or_raise(destination_text, field="destination")
 
-    # Ask GraphHopper for the driving routes between both points; step 5.2 plans all of them, for now use the best.
-    route = get_routes((origin.lon, origin.lat), (destination.lon, destination.lat))[0]
+    # Ask GraphHopper for up to 3 driving routes between both points.
+    routes = get_routes((origin.lon, origin.lat), (destination.lon, destination.lat))
 
-    # Measure the route, then place checkpoints along it with their arrival times.
-    progress = build_route_progress(route.geometry, route.time_intervals)
-    checkpoints = build_checkpoints(route.geometry, progress, spacing_mi, departure_utc)
+    # Fastest first, so the labels go A, B, C from fastest to slowest.
+    routes.sort(key=_get_driving_seconds)
 
-    # Look up the weather at each checkpoint's arrival time and rate the risk for this truck.
-    assessed_checkpoints = _assess_checkpoints(checkpoints, weight_lb)
-    risk_summary = build_risk_summary(assessed_checkpoints)
+    planned_routes = []
+    for index, route in enumerate(routes):
+        planned_routes.append(_plan_route(ROUTE_LABELS[index], route, departure_utc, spacing_mi, weight_lb))
 
-    # Shape the JSON the frontend receives; distance is our own measured total, so it matches the last checkpoint.
+    # The assessment asks for 3 options; say so when GraphHopper found fewer.
+    notes = []
+    if len(planned_routes) < ROUTE_COUNT:
+        notes.append(_build_route_count_note(len(planned_routes)))
+
     return {
         "origin": asdict(origin),
         "destination": asdict(destination),
         "departure_utc": _format_utc(departure_utc),
-        "route": {
-            "geometry": route.geometry,
-            "distance_mi": round(progress.miles_at[-1], MILE_DECIMALS),
-            "duration_s": round(progress.seconds_at[-1]),
-            # The last checkpoint is the destination, so its ETA is the arrival time.
-            "arrival_utc": _format_utc(checkpoints[-1].eta_utc),
-            "miles_by_level": _serialize_miles_by_level(risk_summary.miles_by_level),
-            "avg_risk": risk_summary.avg_risk,
-            "worst_level": risk_summary.worst_level.value,
-            "checkpoints": [_serialize_checkpoint(assessed_checkpoint) for assessed_checkpoint in assessed_checkpoints],
-        },
+        "notes": notes,
+        # Until the frontend shows every route (step 5.4), send only the fastest one (A).
+        "route": _serialize_route(planned_routes[0]),
+    }
+
+
+def _get_driving_seconds(route: Route) -> float:
+    # The value routes are sorted by: GraphHopper's total driving time.
+    return route.time_s
+
+
+def _plan_route(label: str, route: Route, departure_utc: datetime, spacing_mi: int, weight_lb: int) -> PlannedRoute:
+    # Measure the route, then place checkpoints along it with their arrival times.
+    progress = build_route_progress(route.geometry, route.time_intervals)
+    checkpoints = build_checkpoints(route.geometry, progress, spacing_mi, departure_utc)
+
+    # Look up the weather at each checkpoint's arrival time (one Open-Meteo call per route) and rate the risk.
+    assessed_checkpoints = _assess_checkpoints(checkpoints, weight_lb)
+
+    return PlannedRoute(
+        label=label,
+        route=route,
+        progress=progress,
+        assessed_checkpoints=assessed_checkpoints,
+        risk_summary=build_risk_summary(assessed_checkpoints),
+    )
+
+
+def _build_route_count_note(route_count: int) -> str:
+    if route_count == 1:
+        return "Only 1 route found between these places."
+
+    return f"Only {route_count} routes found between these places."
+
+
+def _serialize_route(planned_route: PlannedRoute) -> dict:
+    progress = planned_route.progress
+    risk_summary = planned_route.risk_summary
+    assessed_checkpoints = planned_route.assessed_checkpoints
+
+    # Distance is our own measured total, so it matches the last checkpoint.
+    return {
+        "geometry": planned_route.route.geometry,
+        "distance_mi": round(progress.miles_at[-1], MILE_DECIMALS),
+        "duration_s": round(progress.seconds_at[-1]),
+        # The last checkpoint is the destination, so its ETA is the arrival time.
+        "arrival_utc": _format_utc(assessed_checkpoints[-1].checkpoint.eta_utc),
+        "miles_by_level": _serialize_miles_by_level(risk_summary.miles_by_level),
+        "avg_risk": risk_summary.avg_risk,
+        "worst_level": risk_summary.worst_level.value,
+        "checkpoints": [_serialize_checkpoint(assessed_checkpoint) for assessed_checkpoint in assessed_checkpoints],
     }
 
 

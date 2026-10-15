@@ -135,3 +135,15 @@ class RouteRiskSummary:
     # Mileage-weighted average level, from 0.00 (all Low) to 4.00 (all No Travel).
     avg_risk: float
     worst_level: RiskLevel
+
+
+@dataclass(frozen=True)
+class PlannedRoute:
+    """One route with its checkpoints and risk; built by trip_plan_service."""
+
+    # "A", "B" or "C", from fastest to slowest.
+    label: str
+    route: Route
+    progress: RouteProgress
+    assessed_checkpoints: list[AssessedCheckpoint]
+    risk_summary: RouteRiskSummary

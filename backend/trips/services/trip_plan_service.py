@@ -8,11 +8,12 @@ from trips.clients.open_meteo_client import get_hourly_forecasts
 from trips.constants import MILE_DECIMALS, ROUTE_COUNT, ROUTE_LABELS
 from trips.exceptions import PlaceNotFoundError
 from trips.logic.checkpoint_builder import build_checkpoints, build_route_progress
+from trips.logic.corridor_builder import build_corridor_points
 from trips.logic.risk_calculator import calculate_risk
 from trips.logic.risk_summary_builder import build_risk_summary
 from trips.logic.route_recommender import recommend_route
 from trips.logic.weather_lookup import get_weather_at, round_to_nearest_hour
-from trips.types import AssessedCheckpoint, Checkpoint, Place, PlannedRoute, RiskLevel, Route
+from trips.types import AssessedCheckpoint, Checkpoint, LonLat, Place, PlannedRoute, RiskLevel, Route
 
 # Decimal places kept for checkpoint coordinates (about 1 meter); keeps the JSON small.
 COORDINATE_DECIMALS = 5
@@ -61,7 +62,17 @@ def create_trip_plan(
         "warning": recommendation.warning,
         "notes": notes,
         "routes": serialized_routes,
+        # Weather points around all routes for the heatmap; the frontend sends them back to /api/heatmap.
+        "corridor_points": build_corridor_points(_get_route_geometries(planned_routes)),
     }
+
+
+def _get_route_geometries(planned_routes: list[PlannedRoute]) -> list[list[LonLat]]:
+    route_geometries = []
+    for planned_route in planned_routes:
+        route_geometries.append(planned_route.route.geometry)
+
+    return route_geometries
 
 
 def _get_driving_seconds(route: Route) -> float:

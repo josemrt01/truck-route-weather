@@ -346,3 +346,11 @@ def test_recommends_fastest_route_when_risk_is_equal(monkeypatch):
     assert trip_plan["recommended_route_id"] == "A"
     assert trip_plan["reason"] == "Routes A and B have equal risk; Route A is faster."
     assert trip_plan["warning"] is None
+
+
+def test_sends_corridor_points_for_the_heatmap():
+    corridor_points = post_trip_plan(VALID_BODY).json()["corridor_points"]
+
+    assert len(corridor_points) > 0
+    # Each point is [lon, lat], like the route geometry; Dallas lies in the cell centered at (-96.875, 32.875).
+    assert [-96.875, 32.875] in corridor_points

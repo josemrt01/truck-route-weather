@@ -7,11 +7,14 @@ from trips.constants import COUNTRY_CODE, HTTP_TIMEOUT_SECONDS, ROUTE_COUNT, ROU
 from trips.exceptions import GraphHopperError, RoutingError
 from trips.types import LonLat, Place, Route, TimeInterval
 
-# Language of place names in geocoding results; used by get_coordinates_from_text.
+# Language of place names in geocoding results; used by search_places.
 GEOCODING_LOCALE = "en"
 
-# Matches requested before keeping the first one in COUNTRY_CODE; used by get_coordinates_from_text.
+# Matches requested from GraphHopper before keeping the ones in COUNTRY_CODE; used by search_places.
 GEOCODING_RESULT_LIMIT = 10
+
+# Most places one search returns (the autocomplete list length); used by search_places.
+PLACE_SUGGESTION_LIMIT = 5
 
 # GraphHopper reports durations in milliseconds; used by _build_route to convert to seconds.
 MILLISECONDS_PER_SECOND = 1000
@@ -25,19 +28,40 @@ ALTERNATIVE_MAX_WEIGHT_FACTOR = 2.0
 ALTERNATIVE_MAX_SHARE_FACTOR = 0.8
 
 
-def get_coordinates_from_text(text: str) -> Place | None:
-    """Return the first match in COUNTRY_CODE for a place name, or None."""
+def search_places(text: str) -> list[Place]:
+    """Return up to PLACE_SUGGESTION_LIMIT places in COUNTRY_CODE matching the text, best match first."""
     data = _get_json(
         "/geocode",
         [("q", text), ("locale", GEOCODING_LOCALE), ("limit", str(GEOCODING_RESULT_LIMIT))],
     )
 
-    # Results can come from any country; keep the first one in ours.
+    places = []
+    labels = set()
     for hit in data.get("hits", []):
-        if hit.get("countrycode", "").upper() == COUNTRY_CODE:
-            return Place(label=_build_place_label(hit), lat=hit["point"]["lat"], lon=hit["point"]["lng"])
+        # Results can come from any country; keep only ours.
+        if hit.get("countrycode", "").upper() != COUNTRY_CODE:
+            continue
 
-    return None
+        # The same place can come back twice (e.g. as a city and as a town); list it once.
+        label = _build_place_label(hit)
+        if label in labels:
+            continue
+
+        labels.add(label)
+        places.append(Place(label=label, lat=hit["point"]["lat"], lon=hit["point"]["lng"]))
+        if len(places) == PLACE_SUGGESTION_LIMIT:
+            break
+
+    return places
+
+
+def get_coordinates_from_text(text: str) -> Place | None:
+    """Return the best match in COUNTRY_CODE for a place name, or None."""
+    places = search_places(text)
+    if not places:
+        return None
+
+    return places[0]
 
 
 def get_routes(origin: LonLat, destination: LonLat) -> list[Route]:
@@ -134,7 +158,25 @@ def _format_point(point: LonLat) -> str:
 
 def _build_place_label(hit: dict) -> str:
     name = hit.get("name", "")
+    street = hit.get("street", "")
+    house_number = hit.get("housenumber", "")
+    city = hit.get("city", "")
     state = hit.get("state", "")
 
-    # "Dallas, Texas"; just "Texas" when the place is the state itself.
-    return f"{name}, {state}" if state and state != name else name
+    parts = []
+
+    # A named place (city, business) leads with its name; an address leads with its house number and street.
+    if name and name != street:
+        parts.append(name)
+    elif street and house_number:
+        parts.append(f"{house_number} {street}")
+    elif street:
+        parts.append(street)
+
+    # Skip the city or state when it is the place itself: "Dallas, Texas", not "Dallas, Dallas, Texas".
+    if city and city != name:
+        parts.append(city)
+    if state and state != name:
+        parts.append(state)
+
+    return ", ".join(parts)

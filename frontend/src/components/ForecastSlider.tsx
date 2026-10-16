@@ -130,14 +130,18 @@ export function ForecastSlider({
             />
             {tripHourRange && (
               <div className="relative h-1.5 rounded-full bg-border" aria-hidden="true">
-                {/* Placed in percent of the 0-48 h track; positions come from data, so inline style. */}
-                <div
-                  className="absolute top-0 h-full min-w-1 rounded-full bg-primary"
-                  style={{
-                    left: `${(tripHourRange.startHour / lastHour) * 100}%`,
-                    width: `${((tripHourRange.endHour - tripHourRange.startHour) / lastHour) * 100}%`,
-                  }}
-                />
+                {/* The slider's thumb center stops half a thumb (~8px) short of each end, so the band uses the same
+                    inset area; otherwise the thumb runs ahead of the band. */}
+                <div className="absolute inset-x-2 inset-y-0">
+                  {/* Placed in percent of the 0-48 h track; positions come from data, so inline style. */}
+                  <div
+                    className="absolute top-0 h-full min-w-1 rounded-full bg-primary"
+                    style={{
+                      left: `${(tripHourRange.startHour / lastHour) * 100}%`,
+                      width: `${((tripHourRange.endHour - tripHourRange.startHour) / lastHour) * 100}%`,
+                    }}
+                  />
+                </div>
               </div>
             )}
             {heatmap && (

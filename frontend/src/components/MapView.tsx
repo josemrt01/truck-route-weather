@@ -10,9 +10,11 @@ import {
   FIT_ANIMATION_MS,
   HEATMAP_LAYER_ID,
   HEATMAP_SOURCE_ID,
+  HEATMAP_SOURCE_MAX_ZOOM,
   CONTIGUOUS_US_BOUNDS,
   INITIAL_FIT_PADDING,
   INITIAL_FIT_PADDING_NARROW,
+  MAP_LABEL_LAYER_ID,
   MAP_STYLE_URL,
   MAX_ROUTE_FIT_ZOOM,
   NARROW_SCREEN_QUERY,
@@ -92,6 +94,9 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
   const mapRef = useRef<MapRef>(null)
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
   const [selectedSegment, setSelectedSegment] = useState<SelectedSegment | null>(null)
+  // The map style's first label layer once the map has loaded; every layer of ours is drawn under it.
+  // Until then (or if the style has no such layer) our layers go on top.
+  const [labelLayerId, setLabelLayerId] = useState<string | undefined>(undefined)
 
   const selectedRoute = tripPlan && selectedRouteId ? getRouteById(tripPlan, selectedRouteId) : null
 
@@ -143,6 +148,13 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
     selectedSegment?.tripPlan === tripPlan && selectedSegment.routeId === selectedRouteId ? selectedSegment : null
   const highlightedSegmentIndex = hoveredSegmentIndex ?? visibleSegment?.index ?? NO_SEGMENT_INDEX
 
+  function handleLoad() {
+    // Placing a layer under one the style doesn't have would fail, so check it exists first.
+    if (mapRef.current?.getLayer(MAP_LABEL_LAYER_ID)) {
+      setLabelLayerId(MAP_LABEL_LAYER_ID)
+    }
+  }
+
   function handleMouseMove(event: MapLayerMouseEvent) {
     // features holds the stretch under the mouse (only INTERACTIVE_LAYER_IDS are checked), or nothing.
     const segmentIndex = event.features?.[0]?.properties?.index
@@ -178,6 +190,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
       mapStyle={MAP_STYLE_URL}
       style={{ width: '100%', height: '100%' }}
       interactiveLayerIds={INTERACTIVE_LAYER_IDS}
+      onLoad={handleLoad}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHoveredSegmentIndex(null)}
       onClick={handleClick}
@@ -188,12 +201,13 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
       <NavigationControl position="top-right" />
 
       {/* Layers draw in the order listed: gray other routes, then the selected route's dark outline,
-          risk-colored stretches and highlight, then the dots on top. */}
+          risk-colored stretches and highlight, then the dots on top; all under the map's place and road names. */}
       {/* Weather heatmap at the bottom: each grid point a soft circle in its risk color (Low is fainter). */}
       {heatmapPoints && tripPlan && (
-        <Source id={HEATMAP_SOURCE_ID} type="geojson" data={heatmapPoints}>
+        <Source id={HEATMAP_SOURCE_ID} type="geojson" data={heatmapPoints} maxzoom={HEATMAP_SOURCE_MAX_ZOOM}>
           <Layer
             id={HEATMAP_LAYER_ID}
+            beforeId={labelLayerId}
             type="circle"
             paint={{
               // Only this rule changes when the slider moves; the points themselves stay loaded.
@@ -211,6 +225,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
         <Source id={OTHER_ROUTES_SOURCE_ID} type="geojson" data={otherRouteLines}>
           <Layer
             id={OTHER_ROUTES_LAYER_ID}
+            beforeId={labelLayerId}
             type="line"
             layout={{ 'line-join': 'round', 'line-cap': 'round' }}
             paint={{ 'line-color': OTHER_ROUTE_COLOR, 'line-width': OTHER_ROUTE_WIDTH }}
@@ -222,6 +237,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
         <Source id={ROUTE_SEGMENT_SOURCE_ID} type="geojson" data={routeSegments}>
           <Layer
             id={ROUTE_CASING_LAYER_ID}
+            beforeId={labelLayerId}
             type="line"
             // Round joins and caps keep corners and stretch ends smooth.
             layout={{ 'line-join': 'round', 'line-cap': 'round' }}
@@ -229,6 +245,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
           />
           <Layer
             id={ROUTE_SEGMENT_LAYER_ID}
+            beforeId={labelLayerId}
             type="line"
             layout={{ 'line-join': 'round', 'line-cap': 'round' }}
             // Each stretch takes the color of its risk level.
@@ -236,6 +253,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
           />
           <Layer
             id={ROUTE_SEGMENT_HIGHLIGHT_LAYER_ID}
+            beforeId={labelLayerId}
             type="line"
             // Draw only the stretch whose index matches the hovered or selected one, thicker in its own color.
             filter={['==', ['get', 'index'], highlightedSegmentIndex]}
@@ -249,6 +267,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
         <Source id={CHECKPOINT_SOURCE_ID} type="geojson" data={checkpointPoints}>
           <Layer
             id={CHECKPOINT_LAYER_ID}
+            beforeId={labelLayerId}
             type="circle"
             paint={{ 'circle-color': CHECKPOINT_DOT_COLOR, 'circle-radius': CHECKPOINT_DOT_RADIUS }}
           />
@@ -271,7 +290,8 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
         <Popup
           longitude={visibleSegment.lon}
           latitude={visibleSegment.lat}
-          anchor="bottom"
+          // No anchor given, so MapLibre opens it on whichever side of the click fits inside the map
+          // (below a segment near the top edge, instead of cut off).
           offset={SEGMENT_POPUP_OFFSET}
           // Room for the 256px content plus padding; MapLibre's default (240px) would squeeze it.
           maxWidth="320px"

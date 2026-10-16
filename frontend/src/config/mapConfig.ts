@@ -5,6 +5,34 @@ import { RISK_LEVEL_COLORS } from './riskConfig'
 // Map look (OpenFreeMap "liberty" vector style, no API key); used by MapView.
 export const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
 
+// First label layer (river names) of the map style, above its roads, bridges and buildings; our layers go under it,
+// so place and road names stay readable on top of the route; used by MapView.
+export const MAP_LABEL_LAYER_ID = 'waterway_line_label'
+
+// Zoom levels and width multipliers for lines and dots that grow as the map zooms in: thinner zoomed out,
+// the base width at a whole-route view, and much wider at street level; used by getZoomScaledWidth.
+const ZOOMED_OUT_ZOOM = 5
+const ZOOMED_OUT_WIDTH_FACTOR = 0.6
+const BASE_WIDTH_ZOOM = 9
+const STREET_ZOOM = 15
+const STREET_WIDTH_FACTOR = 2.4
+
+// Width rule that grows a pixel width with the zoom (base width at zoom 9), so the route reads like a road
+// at every zoom; used for the route, outline, highlight, other routes and checkpoint dots.
+function getZoomScaledWidth(baseWidthPx: number): ExpressionSpecification {
+  return [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    ZOOMED_OUT_ZOOM,
+    baseWidthPx * ZOOMED_OUT_WIDTH_FACTOR,
+    BASE_WIDTH_ZOOM,
+    baseWidthPx,
+    STREET_ZOOM,
+    baseWidthPx * STREET_WIDTH_FACTOR,
+  ]
+}
+
 // The lower 48 states as [[west, south], [east, north]]; the starting camera fits them; used by MapView.
 export const CONTIGUOUS_US_BOUNDS: [[number, number], [number, number]] = [
   [-124.8, 24.4],
@@ -33,6 +61,12 @@ export const HEATMAP_SOURCE_ID = 'heatmap-points'
 // Layer that draws each heatmap point as a soft circle in its risk color, under the routes; used by MapView.
 export const HEATMAP_LAYER_ID = 'heatmap-circles'
 
+// Highest zoom the heatmap points are cut into map tiles for; beyond it MapLibre stretches these tiles instead.
+// MapLibre draws a circle only while the tile holding its center is on screen, and zoomed in that tile can be
+// off screen while the circle still reaches in (the heatmap vanished). Tiles this big (about 22 degrees wide)
+// almost always include the centers of the circles on screen; used by MapView.
+export const HEATMAP_SOURCE_MAX_ZOOM = 4
+
 // Heatmap circle radius as a share of a grid cell's width; above 1 so the blurred edges of neighbors overlap
 // and blend into one area instead of separate dots; used by getHeatmapRadiusAtZoom0.
 export const HEATMAP_CELL_COVERAGE = 1.25
@@ -54,8 +88,8 @@ export const OTHER_ROUTES_LAYER_ID = 'other-routes-line'
 // Color of the unselected routes, a neutral gray apart from the risk colors; used by MapView.
 export const OTHER_ROUTE_COLOR = '#6e7781'
 
-// Thickness in pixels of the unselected routes, thinner than the selected one; used by MapView.
-export const OTHER_ROUTE_WIDTH = 4
+// Thickness of the unselected routes (4px at zoom 9, growing with zoom), thinner than the selected one; used by MapView.
+export const OTHER_ROUTE_WIDTH = getZoomScaledWidth(4)
 
 // Name of the checkpoint points inside MapLibre; used by MapView.
 export const CHECKPOINT_SOURCE_ID = 'checkpoints'
@@ -87,25 +121,29 @@ export const ROUTE_SEGMENT_COLOR_EXPRESSION: ExpressionSpecification = [
   UNKNOWN_LEVEL_COLOR,
 ]
 
-// Dark outline color under the route, so yellow and green stand out on the light map; used by MapView.
-export const ROUTE_CASING_COLOR = '#1f2328'
+// Dark gray outline under the route, so yellow and green stand out on the light map without a harsh black edge;
+// used by MapView.
+export const ROUTE_CASING_COLOR = '#424a53'
 
-// Outline thickness in pixels; wider than ROUTE_LINE_WIDTH so a thin dark border shows on each side; used by MapView.
-export const ROUTE_CASING_WIDTH = 8
+// Outline thickness (7px at zoom 9, growing with zoom); wider than ROUTE_LINE_WIDTH so a thin border shows on each
+// side; used by MapView.
+export const ROUTE_CASING_WIDTH = getZoomScaledWidth(7)
 
-// Route line thickness in pixels; used by MapView.
-export const ROUTE_LINE_WIDTH = 5
+// Route line thickness (5px at zoom 9, growing with zoom); used by MapView.
+export const ROUTE_LINE_WIDTH = getZoomScaledWidth(5)
 
-// Thickness in pixels of the hovered or selected route stretch, drawn in its own risk color; used by MapView.
-export const ROUTE_SEGMENT_HIGHLIGHT_WIDTH = 9
+// Thickness of the hovered or selected route stretch (9px at zoom 9, growing with zoom), drawn in its own risk color;
+// used by MapView.
+export const ROUTE_SEGMENT_HIGHLIGHT_WIDTH = getZoomScaledWidth(9)
 
 // Checkpoint dot color, white so it shows on any route color; used by MapView.
 export const CHECKPOINT_DOT_COLOR = '#ffffff'
 
-// Checkpoint dot radius in pixels, small enough to sit inside the route line; used by MapView.
-export const CHECKPOINT_DOT_RADIUS = 3
+// Checkpoint dot radius (3px at zoom 9, growing with zoom like the line), small enough to sit inside it;
+// used by MapView.
+export const CHECKPOINT_DOT_RADIUS = getZoomScaledWidth(3)
 
-// Pixels between a clicked point and the popup above it; used by MapView.
+// Pixels between a clicked point and the segment popup next to it; used by MapView.
 export const SEGMENT_POPUP_OFFSET = 10
 
 // Milliseconds the camera takes to fly to a new route; used by MapView.

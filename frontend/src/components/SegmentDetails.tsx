@@ -57,18 +57,23 @@ export function SegmentDetails({ start, end }: SegmentDetailsProps) {
           value={`${formatSpeed(worse.wind_speed_mph)}, gusts ${formatSpeed(worse.wind_gust_mph)}`}
           causeColor={isWindCause ? levelColor : null}
         />
-        <WeatherRow
-          icon={CloudRainIcon}
-          label="Rain"
-          value={worse.rain_in_hr > 0 ? formatPrecipitationRate(worse.rain_in_hr) : 'None'}
-          causeColor={worse.cause === RiskCause.RAIN ? levelColor : null}
-        />
-        <WeatherRow
-          icon={SnowflakeIcon}
-          label="Snow"
-          value={worse.snow_in_hr > 0 ? formatPrecipitationRate(worse.snow_in_hr) : 'None'}
-          causeColor={worse.cause === RiskCause.SNOW ? levelColor : null}
-        />
+        {/* Rain and snow only when there is some, so calm segments stay short. */}
+        {worse.rain_in_hr > 0 && (
+          <WeatherRow
+            icon={CloudRainIcon}
+            label="Rain"
+            value={formatPrecipitationRate(worse.rain_in_hr)}
+            causeColor={worse.cause === RiskCause.RAIN ? levelColor : null}
+          />
+        )}
+        {worse.snow_in_hr > 0 && (
+          <WeatherRow
+            icon={SnowflakeIcon}
+            label="Snow"
+            value={formatPrecipitationRate(worse.snow_in_hr)}
+            causeColor={worse.cause === RiskCause.SNOW ? levelColor : null}
+          />
+        )}
       </div>
     </div>
   )

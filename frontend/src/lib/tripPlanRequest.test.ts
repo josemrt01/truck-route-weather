@@ -9,7 +9,6 @@ const typedValues: TripFormValues = {
   destinationPoint: null,
   departureIso: '2026-10-13T13:00:00.000Z',
   spacingMi: 25,
-  weightLb: 45_000,
 }
 
 describe('buildTripPlanRequest', () => {
@@ -19,7 +18,6 @@ describe('buildTripPlanRequest', () => {
       destination: 'Houston, TX',
       departure: '2026-10-13T13:00:00.000Z',
       spacing_mi: 25,
-      weight_lb: 45_000,
     })
   })
 

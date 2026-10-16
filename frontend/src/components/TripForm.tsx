@@ -100,8 +100,8 @@ export function TripForm({ onTripPlanned, onClear }: TripFormProps) {
             new Date(),
           ),
           spacingMi,
-          weightLb,
         }),
+        weightLb,
       )
       onTripPlanned(tripPlan, { weightLb, spacingMi })
     } catch (caughtError) {

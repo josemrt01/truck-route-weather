@@ -10,7 +10,6 @@ export type TripFormValues = {
   // ISO time in UTC, from buildDepartureIso.
   departureIso: string
   spacingMi: number
-  weightLb: number
 }
 
 export function buildTripPlanRequest(values: TripFormValues): TripPlanRequest {
@@ -19,7 +18,6 @@ export function buildTripPlanRequest(values: TripFormValues): TripPlanRequest {
     destination: values.destination.trim(),
     departure: values.departureIso,
     spacing_mi: values.spacingMi,
-    weight_lb: values.weightLb,
   }
 
   // Points go along only for a picked suggestion; otherwise the backend geocodes the text.

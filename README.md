@@ -25,16 +25,21 @@ recommends a route with a one-line reason.
 ```
 Origin, destination, departure, weight, checkpoint spacing
   │
-  ├─ 1. GraphHopper: up to 3 alternative routes (geometry + driving time per stretch)
-  ├─ 2. Checkpoints every N miles along each route, each with its ETA
-  ├─ 3. Open-Meteo: hourly forecast at each checkpoint, for the full hour nearest its ETA
-  ├─ 4. Risk level per checkpoint (wind gusts, rain, snow, load weight)
-  ├─ 5. Miles at each level, average risk and worst level per route
-  ├─ 6. Ranking and the reason the first route wins
-  └─ 7. Heatmap (separate request): a grid around the routes, risk for each of the next 49 hours
+  ├─ Backend  POST /api/trip-plans
+  │    1. GraphHopper: up to 3 alternative routes (geometry + driving time per stretch)
+  │    2. Checkpoints every N miles along each route, each with its ETA
+  ├─ Browser  3. Open-Meteo: hourly forecast at every checkpoint
+  ├─ Backend  POST /api/trip-risks
+  │    4. Risk level per checkpoint at the forecast hour nearest its ETA (wind gusts, rain, snow, load weight)
+  │    5. Miles at each level, average risk and worst level per route
+  │    6. Ranking and the reason the first route wins
+  └─ Heatmap  the browser gets 49 hours of forecasts for a grid around the routes;
+              POST /api/heatmap turns them into a risk level per point and hour
 ```
 
-The routes come back first; the heatmap is requested afterwards, so the routes never wait for it.
+The browser fetches the forecasts itself so Open-Meteo's free daily limit counts per visitor. When the
+server fetched them, the hosting's shared outgoing IP hit that limit. All risk rules and the ranking stay in
+the backend. The routes show first; the heatmap is requested afterwards, so the routes never wait for it.
 
 ### Risk levels
 
@@ -73,7 +78,7 @@ If even the best route crosses No Travel conditions, the app warns the driver to
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS 4, shadcn/ui on Base UI |
 | Map | MapLibre GL via `react-map-gl`, OpenFreeMap "liberty" style (OpenStreetMap data, no key) |
 | Routing and place search | GraphHopper Directions and Geocoding APIs (free plan) |
-| Weather | Open-Meteo hourly forecast (no key) |
+| Weather | Open-Meteo hourly forecast (no key), fetched by the browser |
 | Tests | pytest (backend), Vitest (frontend) |
 | Hosting | Render, one web service: Django serves `/api/*` and the built React app |
 
@@ -83,14 +88,14 @@ If even the best route crosses No Travel conditions, the app warns the driver to
 backend/
   config/            Django settings and URLs
   trips/
-    clients/         The only code that calls outside APIs (GraphHopper, Open-Meteo)
+    clients/         The only code that calls an outside API (GraphHopper)
     logic/           Pure functions: checkpoints, risk, ranking, heatmap grid (unit tested without network)
     services/        Put clients and logic together for each endpoint
     views.py         API endpoints
     tests/
 frontend/
   src/
-    api/             Calls to the backend
+    api/             Calls to the backend and to Open-Meteo
     components/      React components (map, panel, drawer, forecast slider, route cards)
     lib/             Plain functions and hooks (unit tested)
     config/          Map, layout and style settings
@@ -103,8 +108,9 @@ frontend/
 |---|---|---|
 | `GET` | `/api/health` | Health check (used by Render) |
 | `GET` | `/api/places?q=<text>` | Up to 5 US places matching the text |
-| `POST` | `/api/trip-plans` | Routes, checkpoints with weather and risk, ranking and reason |
-| `POST` | `/api/heatmap` | Risk level at each grid point for the next 49 hours |
+| `POST` | `/api/trip-plans` | Routes and checkpoints with ETAs, and the heatmap grid points (no weather) |
+| `POST` | `/api/trip-risks` | Risk per checkpoint and route, ranking and reason, from the forecasts the browser sends |
+| `POST` | `/api/heatmap` | Risk level at each grid point for 49 hours, from the forecasts the browser sends |
 
 ## Run it locally
 

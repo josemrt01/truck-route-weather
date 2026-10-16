@@ -78,7 +78,7 @@ function App() {
     setIsTruckVisible(false)
 
     // The routes are already on screen; the heatmap arrives after, so routes never wait for it.
-    getHeatmap({ points: newTripPlan.corridor_points, weight_lb: newTripSettings.weightLb })
+    getHeatmap(newTripPlan.corridor_points, newTripSettings.weightLb)
       .then((heatmap) => setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.READY, heatmap }))
       .catch(() => setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.FAILED, heatmap: null }))
   }

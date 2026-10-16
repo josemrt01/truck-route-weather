@@ -23,8 +23,23 @@ export function convertDateTimeLocalToIso(value: string): string {
   return Number.isNaN(date.getTime()) ? '' : date.toISOString()
 }
 
-// Milliseconds in one hour; used by getForecastHourTime.
+// Milliseconds in one hour; used by getForecastHourTime and the hour rounding below.
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000
+
+// The start of the hour a moment falls in, e.g. 14:37 -> 14:00 (whole hours are the same in UTC and US zones).
+export function roundDownToHour(moment: Date): Date {
+  return new Date(Math.floor(moment.getTime() / MILLISECONDS_PER_HOUR) * MILLISECONDS_PER_HOUR)
+}
+
+// The next full hour, or the same moment when it already is one, e.g. 14:37 -> 15:00 and 14:00 -> 14:00.
+export function roundUpToHour(moment: Date): Date {
+  return new Date(Math.ceil(moment.getTime() / MILLISECONDS_PER_HOUR) * MILLISECONDS_PER_HOUR)
+}
+
+// A moment some whole hours later (or earlier, for a negative count); used by the forecast windows.
+export function addHours(moment: Date, hours: number): Date {
+  return new Date(moment.getTime() + hours * MILLISECONDS_PER_HOUR)
+}
 
 // The moment a forecast hour stands for: hour 0 is startHourUtc, hour 6 is six hours later;
 // used by the slider label and the truck marker.

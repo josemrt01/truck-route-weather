@@ -1,10 +1,10 @@
+import type { OpenMeteoHourly } from './openMeteo'
 import type { RiskLevel } from './risk'
-import type { LonLat } from './tripPlan'
 
 // Body of POST /api/heatmap; matches HeatmapRequestSerializer in the backend.
 export type HeatmapRequest = {
-  // The trip plan's corridor_points, sent back unchanged.
-  points: LonLat[]
+  // The trip plan's corridor_points, each with the 49-hour forecast the browser got for it.
+  points: { lon: number; lat: number; forecast: OpenMeteoHourly }[]
   weight_lb: number
 }
 

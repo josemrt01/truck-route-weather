@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { convertDateTimeLocalToIso, getDateTimeLocalValue, getTripHourRange } from './dateTime'
+import {
+  addHours,
+  convertDateTimeLocalToIso,
+  getDateTimeLocalValue,
+  getTripHourRange,
+  roundDownToHour,
+  roundUpToHour,
+} from './dateTime'
 
 // Tests run in America/Chicago (see vite.config.ts), which is UTC-5 in October.
 describe('getDateTimeLocalValue', () => {
@@ -59,5 +66,27 @@ describe('getTripHourRange', () => {
 
   it('is null when the trip starts after the window', () => {
     expect(getTripHourRange(SLIDER_START, '2026-10-16T13:00:00Z', '2026-10-16T17:00:00Z', 48)).toBeNull()
+  })
+})
+
+describe('roundDownToHour', () => {
+  it('drops the minutes', () => {
+    expect(roundDownToHour(new Date('2026-10-13T14:37:00Z'))).toEqual(new Date('2026-10-13T14:00:00Z'))
+  })
+})
+
+describe('roundUpToHour', () => {
+  it('goes to the next full hour', () => {
+    expect(roundUpToHour(new Date('2026-10-13T14:37:00Z'))).toEqual(new Date('2026-10-13T15:00:00Z'))
+  })
+
+  it('keeps a moment that already is a full hour', () => {
+    expect(roundUpToHour(new Date('2026-10-13T14:00:00Z'))).toEqual(new Date('2026-10-13T14:00:00Z'))
+  })
+})
+
+describe('addHours', () => {
+  it('moves a moment by whole hours', () => {
+    expect(addHours(new Date('2026-10-13T13:00:00Z'), 48)).toEqual(new Date('2026-10-15T13:00:00Z'))
   })
 })

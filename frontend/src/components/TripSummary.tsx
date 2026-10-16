@@ -34,7 +34,7 @@ export function TripSummary({ tripPlan, tripSettings, onEdit, onClear }: TripSum
       <button
         type="button"
         onClick={onEdit}
-        className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 font-semibold text-primary hover:bg-muted"
+        className="flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 font-semibold text-primary hover:bg-muted"
       >
         <PencilIcon className="size-3.5" />
         Edit
@@ -43,7 +43,7 @@ export function TripSummary({ tripPlan, tripSettings, onEdit, onClear }: TripSum
         type="button"
         onClick={onClear}
         aria-label="Clear trip"
-        className="cursor-pointer rounded-md p-1 text-muted-foreground hover:bg-muted"
+        className="cursor-pointer rounded-lg p-2 text-muted-foreground hover:bg-muted"
       >
         <XIcon className="size-4" />
       </button>

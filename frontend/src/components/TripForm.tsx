@@ -19,6 +19,7 @@ import {
 import { DepartureInput } from './DepartureInput'
 import { FormField } from './FormField'
 import { PlaceSearchInput } from './PlaceSearchInput'
+import { TripEndpointFields } from './TripEndpointFields'
 
 // Field names the form has an input for; an error on any other field is shown as a general error.
 const FORM_FIELDS: readonly string[] = Object.values(TripPlanField)
@@ -141,6 +142,18 @@ export function TripForm({ onTripPlanned, onClear }: TripFormProps) {
     clearErrorFor(TripPlanField.SPACING_MI)
   }
 
+  // ⇅ swaps start and end, picked points included; their old errors no longer apply.
+  function handleSwapPlaces() {
+    setOrigin(destination)
+    setDestination(origin)
+    setOriginPoint(destinationPoint)
+    setDestinationPoint(originPoint)
+    clearErrorFor(TripPlanField.ORIGIN)
+    clearErrorFor(TripPlanField.ORIGIN_POINT)
+    clearErrorFor(TripPlanField.DESTINATION)
+    clearErrorFor(TripPlanField.DESTINATION_POINT)
+  }
+
   // Typing or clearing drops the picked point, so the text and the point never disagree.
   function handleOriginTextChange(text: string) {
     setOrigin(text)
@@ -174,43 +187,39 @@ export function TripForm({ onTripPlanned, onClear }: TripFormProps) {
     <form onSubmit={handleSubmit}>
       {/* Disabling the fieldset disables every input and the button while planning. */}
       <fieldset disabled={isPlanning} className="flex flex-col gap-4">
-        <FormField
-          id="origin-input"
-          label="Origin"
-          isRequired
-          error={getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT)}
-        >
-          <PlaceSearchInput
-            id="origin-input"
-            text={origin}
-            placeholder="Dallas, TX"
-            isPlaceSelected={originPoint !== null}
-            isInvalid={Boolean(getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT))}
-            isRequired
-            clearLabel="Clear origin"
-            onTextChange={handleOriginTextChange}
-            onPlaceSelect={handleOriginSelect}
-          />
-        </FormField>
-
-        <FormField
-          id="destination-input"
-          label="Destination"
-          isRequired
-          error={getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT)}
-        >
-          <PlaceSearchInput
-            id="destination-input"
-            text={destination}
-            placeholder="Houston, TX"
-            isPlaceSelected={destinationPoint !== null}
-            isInvalid={Boolean(getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT))}
-            isRequired
-            clearLabel="Clear destination"
-            onTextChange={handleDestinationTextChange}
-            onPlaceSelect={handleDestinationSelect}
-          />
-        </FormField>
+        <TripEndpointFields
+          originId="origin-input"
+          originError={getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT)}
+          originInput={
+            <PlaceSearchInput
+              id="origin-input"
+              text={origin}
+              placeholder="Dallas, TX"
+              isPlaceSelected={originPoint !== null}
+              isInvalid={Boolean(getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT))}
+              isRequired
+              clearLabel="Clear origin"
+              onTextChange={handleOriginTextChange}
+              onPlaceSelect={handleOriginSelect}
+            />
+          }
+          destinationId="destination-input"
+          destinationError={getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT)}
+          destinationInput={
+            <PlaceSearchInput
+              id="destination-input"
+              text={destination}
+              placeholder="Houston, TX"
+              isPlaceSelected={destinationPoint !== null}
+              isInvalid={Boolean(getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT))}
+              isRequired
+              clearLabel="Clear destination"
+              onTextChange={handleDestinationTextChange}
+              onPlaceSelect={handleDestinationSelect}
+            />
+          }
+          onSwap={handleSwapPlaces}
+        />
 
         <FormField id="departure-input" label="Departure" isRequired error={getFieldError(TripPlanField.DEPARTURE)}>
           <DepartureInput

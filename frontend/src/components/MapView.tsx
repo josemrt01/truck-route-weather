@@ -10,7 +10,9 @@ import {
   FIT_ANIMATION_MS,
   HEATMAP_LAYER_ID,
   HEATMAP_SOURCE_ID,
-  INITIAL_MAP_VIEW,
+  CONTIGUOUS_US_BOUNDS,
+  INITIAL_FIT_PADDING,
+  INITIAL_FIT_PADDING_NARROW,
   MAP_STYLE_URL,
   MAX_ROUTE_FIT_ZOOM,
   NARROW_SCREEN_QUERY,
@@ -74,9 +76,18 @@ type MapViewProps = {
   heatmap: Heatmap | null
   // Forecast hour the heatmap shows: 0 = now, up to 48; set by the forecast slider.
   forecastHour: number
+  // False until the user plays or drags the forecast slider, so the truck doesn't clutter the map before then.
+  isTruckVisible: boolean
 }
 
-export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: MapViewProps) {
+export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTruckVisible }: MapViewProps) {
+  // The first camera fits the US into the visible part of the map; the map reads this only once, when it loads.
+  const [initialViewState] = useState(() => ({
+    bounds: CONTIGUOUS_US_BOUNDS,
+    fitBoundsOptions: {
+      padding: window.matchMedia(NARROW_SCREEN_QUERY).matches ? INITIAL_FIT_PADDING_NARROW : INITIAL_FIT_PADDING,
+    },
+  }))
   // Handle to the MapLibre map, so we can move its camera.
   const mapRef = useRef<MapRef>(null)
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
@@ -163,7 +174,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: Ma
   return (
     <Map
       ref={mapRef}
-      initialViewState={INITIAL_MAP_VIEW}
+      initialViewState={initialViewState}
       mapStyle={MAP_STYLE_URL}
       style={{ width: '100%', height: '100%' }}
       interactiveLayerIds={INTERACTIVE_LAYER_IDS}
@@ -253,7 +264,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour }: Ma
       )}
 
       {/* After the A and B pins, so the truck is drawn on top of them. */}
-      {truckPosition && <TruckMarker position={truckPosition} />}
+      {isTruckVisible && truckPosition && <TruckMarker position={truckPosition} />}
 
       {/* Miles, times, risk and weather for the clicked stretch. */}
       {visibleSegment && segmentStart && segmentEnd && (

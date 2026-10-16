@@ -100,13 +100,15 @@ export function DepartureInput({ id, choice, isInvalid, onChoiceChange }: Depart
         <div className="flex gap-2">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger
-              render={<Button variant="outline" aria-label="Departure day" className="flex-1 justify-between" />}
+              render={<Button variant="outline" aria-label="Departure day" className="h-10 flex-1 justify-between text-base" />}
             >
               {selectedDayLabel}
               <CalendarIcon className="text-muted-foreground" />
             </PopoverTrigger>
             <PopoverContent align="start" className="w-auto p-0">
               <Calendar
+                // Bigger day cells and text than shadcn's default, to match the panel's 16 px text.
+                className="text-base [--cell-size:--spacing(9)]"
                 mode="single"
                 // The day can be changed but never cleared.
                 required
@@ -124,12 +126,12 @@ export function DepartureInput({ id, choice, isInvalid, onChoiceChange }: Depart
           </Popover>
 
           <Select items={times} value={choice.timeValue} onValueChange={handleTimeChange}>
-            <SelectTrigger aria-label="Departure time" aria-invalid={isInvalid} className="h-8 flex-1">
+            <SelectTrigger aria-label="Departure time" aria-invalid={isInvalid} className="flex-1 text-base data-[size=default]:h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {times.map((time) => (
-                <SelectItem key={time.value} value={time.value}>
+                <SelectItem key={time.value} value={time.value} className="text-base">
                   {time.label}
                 </SelectItem>
               ))}

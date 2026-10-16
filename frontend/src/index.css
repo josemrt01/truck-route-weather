@@ -29,6 +29,9 @@
   --color-success: #1a7f37;
   /* Soft green background behind success text; used as bg-success-soft on route cards. */
   --color-success-soft: #dafbe1;
+  /* Icon colors on the route cards, so each fact is easy to spot; used as text-distance and text-arrival. */
+  --color-distance: #8250df;
+  --color-arrival: #1b7c83;
   /* Highlighted suggestion row; used as bg-accent in PlaceSearchInput. */
   --color-accent: #ddf4ff;
 
@@ -44,8 +47,8 @@
 
   /* Soft shadow for panels floating over the map; used as shadow-floating-panel by the side panel and the suggestion list. */
   --shadow-floating-panel: 0 1px 4px rgba(0, 0, 0, 0.25);
-  /* Shadow that lifts map pins off the route line; used as drop-shadow-map-pin in RouteEndpointMarker. */
-  --drop-shadow-map-pin: 0 1px 2px rgba(0, 0, 0, 0.4);
+  /* Soft shadow that lifts map pins off the route line; used as drop-shadow-map-pin in RouteEndpointMarker. */
+  --drop-shadow-map-pin: 0 2px 3px rgba(0, 0, 0, 0.35);
 }
 
 @layer base {

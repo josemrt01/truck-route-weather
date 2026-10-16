@@ -85,7 +85,7 @@ export function PlaceSearchInput({
           {text && (
             <Autocomplete.Clear
               aria-label={clearLabel}
-              className="cursor-pointer rounded p-0.5 text-muted-foreground hover:bg-muted"
+              className="cursor-pointer rounded-md p-1 text-muted-foreground hover:bg-muted"
             >
               <XIcon className="size-4" />
             </Autocomplete.Clear>
@@ -96,7 +96,7 @@ export function PlaceSearchInput({
       {/* The portal draws the list at the end of the page, so the panel's scroll area can't cut it off. */}
       <Autocomplete.Portal>
         <Autocomplete.Positioner sideOffset={4} className="z-50 w-(--anchor-width)">
-          <Autocomplete.Popup className="rounded-md border border-border bg-popover py-1 text-sm text-popover-foreground shadow-floating-panel">
+          <Autocomplete.Popup className="rounded-md border border-border bg-popover py-1 text-base text-popover-foreground shadow-floating-panel">
             {status === PlaceSearchStatus.FAILED && <p className={LIST_MESSAGE_CLASS_NAME}>Suggestions unavailable</p>}
             {status === PlaceSearchStatus.READY && places.length === 0 && (
               <p className={LIST_MESSAGE_CLASS_NAME}>No matches</p>

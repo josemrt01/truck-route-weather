@@ -5,8 +5,18 @@ import { RISK_LEVEL_COLORS } from './riskConfig'
 // Map look (OpenFreeMap "liberty" vector style, no API key); used by MapView.
 export const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
 
-// Starting camera, centered on the continental US; used by MapView.
-export const INITIAL_MAP_VIEW = { longitude: -98.5, latitude: 39.5, zoom: 3.5 }
+// The lower 48 states as [[west, south], [east, north]]; the starting camera fits them; used by MapView.
+export const CONTIGUOUS_US_BOUNDS: [[number, number], [number, number]] = [
+  [-124.8, 24.4],
+  [-66.9, 49.4],
+]
+
+// Pixels kept around the US on the first view; left clears the side panel (448px, md:w-[28rem] in App)
+// so the country is centered in the part of the map you can see; used by MapView.
+export const INITIAL_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 488 }
+
+// Same as INITIAL_FIT_PADDING on narrow screens, where the panel sits above the map; used by MapView.
+export const INITIAL_FIT_PADDING_NARROW = { top: 20, right: 20, bottom: 20, left: 20 }
 
 // Name of the route data (one line per stretch between checkpoints) inside MapLibre; used by MapView.
 export const ROUTE_SEGMENT_SOURCE_ID = 'route-segments'
@@ -105,17 +115,11 @@ export const FIT_ANIMATION_MS = 1000
 export const NARROW_SCREEN_QUERY = '(max-width: 767px)'
 
 // Pixels kept around the route when zooming to it, so the start and end pins aren't at the edge;
-// left clears the side panel (12px gap + 320px panel), bottom clears the forecast slider; used by MapView.
-export const ROUTE_FIT_PADDING = { top: 100, right: 100, bottom: 180, left: 432 }
+// left clears the side panel (448px, md:w-[28rem] in App) plus 100px, bottom clears the forecast card; used by MapView.
+export const ROUTE_FIT_PADDING = { top: 100, right: 100, bottom: 280, left: 548 }
 
 // Same as ROUTE_FIT_PADDING on narrow screens, where the panel sits above the map; used by MapView.
-export const ROUTE_FIT_PADDING_NARROW = { top: 60, right: 40, bottom: 180, left: 40 }
+export const ROUTE_FIT_PADDING_NARROW = { top: 60, right: 40, bottom: 280, left: 40 }
 
 // Closest zoom when fitting a route, so short trips keep their surroundings in view; used by MapView.
 export const MAX_ROUTE_FIT_ZOOM = 9
-
-// Start pin color (dark slate, apart from the risk colors); used by RouteEndpointMarker.
-export const START_MARKER_COLOR = '#1f2328'
-
-// End pin color (blue, apart from the risk colors); used by RouteEndpointMarker.
-export const END_MARKER_COLOR = '#0969da'

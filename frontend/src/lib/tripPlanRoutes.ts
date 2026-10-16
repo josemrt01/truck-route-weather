@@ -23,3 +23,8 @@ export function getRoutesInRankOrder(routes: RoutePlan[]): RoutePlan[] {
 
   return routesInRankOrder
 }
+
+// What the user sees for a route: "Option 1" is the recommended one, then the next best; used by RouteCard and App.
+export function getRouteOptionName(route: RoutePlan): string {
+  return `Option ${route.rank}`
+}

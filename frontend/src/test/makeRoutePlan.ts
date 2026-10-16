@@ -5,7 +5,6 @@ import type { RoutePlan } from '../types/tripPlan'
 export function makeRoutePlan(overrides: Partial<RoutePlan>): RoutePlan {
   return {
     id: 'A',
-    name: 'via I-45',
     rank: 1,
     geometry: [],
     distance_mi: 0,

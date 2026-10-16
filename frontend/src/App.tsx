@@ -7,7 +7,7 @@ import { MapView } from './components/MapView'
 import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
 import { TripSummary } from './components/TripSummary'
-import { getRouteById } from './lib/tripPlanRoutes'
+import { getRouteById, getRouteOptionName } from './lib/tripPlanRoutes'
 import { BackendStatus } from './types/backendStatus'
 import { HeatmapStatus, type Heatmap } from './types/heatmap'
 import { PanelView } from './types/panelView'
@@ -34,6 +34,8 @@ function App() {
   const [heatmapResult, setHeatmapResult] = useState<HeatmapResult | null>(null)
   // Forecast hour the heatmap shows: 0 = now, up to 48; the forecast slider changes it.
   const [forecastHour, setForecastHour] = useState(0)
+  // The truck shows only after the user plays or drags the forecast slider; each new plan hides it again.
+  const [isTruckVisible, setIsTruckVisible] = useState(false)
 
   const selectedRoute = tripPlan && selectedRouteId ? getRouteById(tripPlan, selectedRouteId) : null
 
@@ -51,8 +53,9 @@ function App() {
     setPanelView(PanelView.RESULTS)
     setSelectedRouteId(newTripPlan.recommended_route_id)
     setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.LOADING, heatmap: null })
-    // Each new plan starts at "now".
+    // Each new plan starts at "now", without the truck.
     setForecastHour(0)
+    setIsTruckVisible(false)
 
     // The routes are already on screen; the heatmap arrives after, so routes never wait for it.
     getHeatmap({ points: newTripPlan.corridor_points, weight_lb: newTripSettings.weightLb })
@@ -67,13 +70,14 @@ function App() {
     setSelectedRouteId(null)
     setHeatmapResult(null)
     setForecastHour(0)
+    setIsTruckVisible(false)
     setPanelView(PanelView.FORM)
     setFormResetCount((previousCount) => previousCount + 1)
   }
 
   return (
     // Phones: panel on top (at most half the screen, scrolling), map below.
-    // From md (768px) up: map fills the screen, panel floats over it.
+    // From md (768px) up: map fills the screen, panel is a full-height sidebar on the left edge, like Google Maps.
     <main className="flex h-screen flex-col md:relative md:block">
       <div className="relative min-h-0 flex-1 md:absolute md:inset-0">
         <MapView
@@ -81,22 +85,25 @@ function App() {
           selectedRouteId={selectedRouteId}
           heatmap={currentHeatmap?.heatmap ?? null}
           forecastHour={forecastHour}
+          isTruckVisible={isTruckVisible}
         />
         {tripPlan && selectedRoute && (
           <ForecastSlider
             hour={forecastHour}
             onHourChange={setForecastHour}
+            onUse={() => setIsTruckVisible(true)}
             heatmap={currentHeatmap?.heatmap ?? null}
             heatmapStatus={currentHeatmap?.status ?? null}
-            routeName={selectedRoute.name}
+            routeName={getRouteOptionName(selectedRoute)}
             departureUtc={tripPlan.departure_utc}
             arrivalUtc={selectedRoute.arrival_utc}
           />
         )}
       </div>
 
-      <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-sm md:absolute md:top-3 md:left-3 md:max-h-[calc(100vh-24px)] md:w-80 md:overflow-y-auto md:rounded-lg md:shadow-floating-panel">
-        <h1 className="text-lg font-bold">Truck Route Weather</h1>
+      {/* md:w-[28rem] (448px) must match the left value of ROUTE_FIT_PADDING in mapConfig.ts. */}
+      <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-base md:absolute md:top-0 md:left-0 md:h-screen md:max-h-none md:w-[28rem] md:p-6 md:shadow-floating-panel">
+        <h1 className="text-xl font-bold">Truck Route Weather</h1>
         {/* Silent while the backend is fine; only a problem is worth the user's attention. */}
         {backendStatus === BackendStatus.UNREACHABLE && (
           <p className="text-error" role="alert">
@@ -110,7 +117,7 @@ function App() {
             <button
               type="button"
               onClick={() => setPanelView(PanelView.RESULTS)}
-              className="flex cursor-pointer items-center gap-1 self-start rounded-md px-1 py-0.5 font-semibold text-primary hover:bg-muted"
+              className="flex cursor-pointer items-center gap-1.5 self-start rounded-lg px-3 py-2 font-semibold text-primary hover:bg-muted"
             >
               <ArrowLeftIcon className="size-4" />
               Back to routes

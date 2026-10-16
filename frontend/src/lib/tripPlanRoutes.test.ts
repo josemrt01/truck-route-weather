@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeRoutePlan } from '../test/makeRoutePlan'
 import type { TripPlan } from '../types/tripPlan'
-import { getRouteById, getRoutesInRankOrder } from './tripPlanRoutes'
+import { getRouteById, getRouteOptionName, getRoutesInRankOrder } from './tripPlanRoutes'
 
 // A plan with routes A, B and C; only the routes matter here.
 const tripPlan: TripPlan = {
@@ -40,5 +40,11 @@ describe('getRoutesInRankOrder', () => {
 
   it('keeps a single route', () => {
     expect(getRoutesInRankOrder([makeRoutePlan({ id: 'A' })]).map((route) => route.id)).toEqual(['A'])
+  })
+})
+
+describe('getRouteOptionName', () => {
+  it('names a route after its rank, so the recommended route is Option 1', () => {
+    expect(getRouteOptionName(makeRoutePlan({ id: 'C', rank: 2 }))).toBe('Option 2')
   })
 })

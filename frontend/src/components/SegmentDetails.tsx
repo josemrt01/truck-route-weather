@@ -16,7 +16,7 @@ export function SegmentDetails({ start, end }: SegmentDetailsProps) {
   const worse = getWorseCheckpoint(start, end)
 
   return (
-    <div className="flex flex-col gap-0.5 text-sm">
+    <div className="flex flex-col gap-0.5 text-base">
       <strong>
         Miles {start.mile}–{end.mile}
       </strong>

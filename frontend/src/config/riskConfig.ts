@@ -1,5 +1,4 @@
 import { RiskCause, RiskLevel } from '../types/risk'
-import type { MilesByLevel } from '../types/tripPlan'
 
 // Color per risk level; a JS value because MapLibre paints on a canvas and can't read CSS variables;
 // used by the map route colors, RiskLegend and SegmentDetails.
@@ -18,15 +17,6 @@ export const RISK_LEVEL_TEXT_COLORS: Record<RiskLevel, string> = {
   [RiskLevel.HIGH]: '#ffffff',
   [RiskLevel.SEVERE]: '#ffffff',
   [RiskLevel.NO_TRAVEL]: '#ffffff',
-}
-
-// Key of each level in a route's miles_by_level; used by routeRisk.
-export const MILES_BY_LEVEL_KEYS: Record<RiskLevel, keyof MilesByLevel> = {
-  [RiskLevel.LOW]: 'low',
-  [RiskLevel.MODERATE]: 'moderate',
-  [RiskLevel.HIGH]: 'high',
-  [RiskLevel.SEVERE]: 'severe',
-  [RiskLevel.NO_TRAVEL]: 'no_travel',
 }
 
 // Name shown for each risk level; used by RiskLegend, SegmentDetails and the route cards.

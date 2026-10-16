@@ -1,3 +1,4 @@
+import { ArrowLeftIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getBackendStatus } from './api/healthApi'
 import { getHeatmap } from './api/heatmapApi'
@@ -5,10 +6,12 @@ import { ForecastSlider } from './components/ForecastSlider'
 import { MapView } from './components/MapView'
 import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
+import { TripSummary } from './components/TripSummary'
 import { getRouteById } from './lib/tripPlanRoutes'
 import { BackendStatus } from './types/backendStatus'
 import { HeatmapStatus, type Heatmap } from './types/heatmap'
-import type { TripPlan } from './types/tripPlan'
+import { PanelView } from './types/panelView'
+import type { TripPlan, TripSettings } from './types/tripPlan'
 
 // The heatmap and the plan it belongs to; a heatmap for an older plan that answers late is ignored.
 type HeatmapResult = {
@@ -20,6 +23,12 @@ type HeatmapResult = {
 function App() {
   const [backendStatus, setBackendStatus] = useState<BackendStatus>(BackendStatus.CHECKING)
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null)
+  // Truck settings the current plan was made with; set together with tripPlan.
+  const [tripSettings, setTripSettings] = useState<TripSettings | null>(null)
+  // The form until a plan arrives, then the results; "Edit" and "Back to routes" switch between them.
+  const [panelView, setPanelView] = useState<PanelView>(PanelView.FORM)
+  // Changing the form's key makes React build a new, empty form; Clear adds 1 to it.
+  const [formResetCount, setFormResetCount] = useState(0)
   // The route drawn with risk colors; starts as the recommended one, the route cards change it.
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
   const [heatmapResult, setHeatmapResult] = useState<HeatmapResult | null>(null)
@@ -36,17 +45,30 @@ function App() {
     getBackendStatus().then(setBackendStatus)
   }, [])
 
-  function handleTripPlanned(newTripPlan: TripPlan, weightLb: number) {
+  function handleTripPlanned(newTripPlan: TripPlan, newTripSettings: TripSettings) {
     setTripPlan(newTripPlan)
+    setTripSettings(newTripSettings)
+    setPanelView(PanelView.RESULTS)
     setSelectedRouteId(newTripPlan.recommended_route_id)
     setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.LOADING, heatmap: null })
     // Each new plan starts at "now".
     setForecastHour(0)
 
     // The routes are already on screen; the heatmap arrives after, so routes never wait for it.
-    getHeatmap({ points: newTripPlan.corridor_points, weight_lb: weightLb })
+    getHeatmap({ points: newTripPlan.corridor_points, weight_lb: newTripSettings.weightLb })
       .then((heatmap) => setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.READY, heatmap }))
       .catch(() => setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.FAILED, heatmap: null }))
+  }
+
+  // Clear (form) and X (summary): back to an empty form and an empty map.
+  function handleClearTrip() {
+    setTripPlan(null)
+    setTripSettings(null)
+    setSelectedRouteId(null)
+    setHeatmapResult(null)
+    setForecastHour(0)
+    setPanelView(PanelView.FORM)
+    setFormResetCount((previousCount) => previousCount + 1)
   }
 
   return (
@@ -82,10 +104,31 @@ function App() {
           </p>
         )}
 
-        <TripForm onTripPlanned={handleTripPlanned} />
+        {/* The form stays in the page while hidden, so "Edit" brings it back with every value still filled in. */}
+        <div className={panelView === PanelView.FORM ? 'flex flex-col gap-3' : 'hidden'}>
+          {tripPlan && (
+            <button
+              type="button"
+              onClick={() => setPanelView(PanelView.RESULTS)}
+              className="flex cursor-pointer items-center gap-1 self-start rounded-md px-1 py-0.5 font-semibold text-primary hover:bg-muted"
+            >
+              <ArrowLeftIcon className="size-4" />
+              Back to routes
+            </button>
+          )}
+          <TripForm key={formResetCount} onTripPlanned={handleTripPlanned} onClear={handleClearTrip} />
+        </div>
 
-        {tripPlan && selectedRouteId && (
-          <RouteCards tripPlan={tripPlan} selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} />
+        {panelView === PanelView.RESULTS && tripPlan && tripSettings && selectedRouteId && (
+          <>
+            <TripSummary
+              tripPlan={tripPlan}
+              tripSettings={tripSettings}
+              onEdit={() => setPanelView(PanelView.FORM)}
+              onClear={handleClearTrip}
+            />
+            <RouteCards tripPlan={tripPlan} selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} />
+          </>
         )}
       </aside>
     </main>

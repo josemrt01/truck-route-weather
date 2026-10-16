@@ -88,6 +88,13 @@ export type TripPlan = {
   corridor_cell_size_deg: number
 }
 
+// Truck settings the form sent with a plan; the response doesn't repeat them, so App keeps them
+// for the heatmap request and the trip summary.
+export type TripSettings = {
+  weightLb: number
+  spacingMi: number
+}
+
 // Form fields an error can point at; values match the request field names; used by TripPlanError and the trip form.
 export const TripPlanField = {
   ORIGIN: 'origin',

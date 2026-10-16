@@ -46,3 +46,8 @@ export function formatHourOffset(hours: number): string {
   const roundedHours = Math.round(hours * 10) / 10
   return `+${roundedHours}h`
 }
+
+// Whole pounds with thousands separators, e.g. "45,000 lb".
+export function formatWeight(pounds: number): string {
+  return `${pounds.toLocaleString('en-US')} lb`
+}

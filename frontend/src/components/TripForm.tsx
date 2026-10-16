@@ -7,7 +7,15 @@ import { buildDepartureIso, getFirstDepartureSelection } from '../lib/departureO
 import { getRequiredFieldErrors } from '../lib/tripFormValidation'
 import { buildTripPlanRequest } from '../lib/tripPlanRequest'
 import { DepartureMode, type DepartureChoice } from '../types/departure'
-import { TripPlanError, TripPlanField, type FieldErrors, type LonLat, type Place, type TripPlan } from '../types/tripPlan'
+import {
+  TripPlanError,
+  TripPlanField,
+  type FieldErrors,
+  type LonLat,
+  type Place,
+  type TripPlan,
+  type TripSettings,
+} from '../types/tripPlan'
 import { DepartureInput } from './DepartureInput'
 import { FormField } from './FormField'
 import { PlaceSearchInput } from './PlaceSearchInput'
@@ -16,11 +24,13 @@ import { PlaceSearchInput } from './PlaceSearchInput'
 const FORM_FIELDS: readonly string[] = Object.values(TripPlanField)
 
 type TripFormProps = {
-  // Called with the result after a successful plan, plus the weight the heatmap needs; App stores both.
-  onTripPlanned: (tripPlan: TripPlan, weightLb: number) => void
+  // Called with the result after a successful plan, plus the truck settings it was planned with; App stores both.
+  onTripPlanned: (tripPlan: TripPlan, tripSettings: TripSettings) => void
+  // Called by the Clear button; App removes the plan and gives the form a fresh, empty start.
+  onClear: () => void
 }
 
-export function TripForm({ onTripPlanned }: TripFormProps) {
+export function TripForm({ onTripPlanned, onClear }: TripFormProps) {
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
   // Coordinates of the picked suggestion; null while the text is typed by hand.
@@ -86,7 +96,7 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
           weightLb,
         }),
       )
-      onTripPlanned(tripPlan, weightLb)
+      onTripPlanned(tripPlan, { weightLb, spacingMi })
     } catch (caughtError) {
       // getTripPlan only throws TripPlanError; anything else is an unexpected bug in our own code.
       if (!(caughtError instanceof TripPlanError)) {
@@ -255,12 +265,21 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
           />
         </FormField>
 
-        <button
-          type="submit"
-          className="mt-2 cursor-pointer rounded-md bg-primary p-2.5 font-semibold text-surface disabled:cursor-wait disabled:opacity-60"
-        >
-          {isPlanning ? 'Planning…' : 'Plan route'}
-        </button>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="submit"
+            className="flex-1 cursor-pointer rounded-md bg-primary p-2.5 font-semibold text-surface disabled:cursor-wait disabled:opacity-60"
+          >
+            {isPlanning ? 'Planning…' : 'Plan route'}
+          </button>
+          <button
+            type="button"
+            onClick={onClear}
+            className="cursor-pointer rounded-md border border-border px-4 font-semibold hover:bg-muted disabled:cursor-wait disabled:opacity-60"
+          >
+            Clear
+          </button>
+        </div>
 
         {/* Errors not tied to one input: no road, routing service down, network. */}
         {generalError && (

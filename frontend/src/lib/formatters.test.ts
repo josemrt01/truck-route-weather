@@ -7,6 +7,7 @@ import {
   formatHourOffset,
   formatPrecipitationRate,
   formatSpeed,
+  formatWeight,
 } from './formatters'
 
 describe('formatDistance', () => {
@@ -77,5 +78,11 @@ describe('formatHourOffset', () => {
   it('drops a trailing .0', () => {
     expect(formatHourOffset(0)).toBe('+0h')
     expect(formatHourOffset(15)).toBe('+15h')
+  })
+})
+
+describe('formatWeight', () => {
+  it('shows whole pounds with thousands separators', () => {
+    expect(formatWeight(45_000)).toBe('45,000 lb')
   })
 })

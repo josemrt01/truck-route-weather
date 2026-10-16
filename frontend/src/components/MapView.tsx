@@ -46,6 +46,7 @@ import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments, getTru
 import { getRouteById } from '../lib/tripPlanRoutes'
 import { RouteEndpoint } from '../types/routeEndpoint'
 import type { Heatmap } from '../types/heatmap'
+import type { SegmentClick, SelectedSegment } from '../types/selectedSegment'
 import type { TripPlan } from '../types/tripPlan'
 import { RouteEndpointMarker } from './RouteEndpointMarker'
 import { SegmentDetails } from './SegmentDetails'
@@ -59,16 +60,6 @@ const NO_SEGMENT_INDEX = -1
 // Only the route stretches react to the mouse; MapLibre reports which one was hit.
 const INTERACTIVE_LAYER_IDS = [ROUTE_SEGMENT_LAYER_ID]
 
-// A clicked route stretch and where the click was, so the popup opens there.
-type SelectedSegment = {
-  // The plan and route this stretch belongs to; a new plan or another selected route hides the popup.
-  tripPlan: TripPlan
-  routeId: string
-  index: number
-  lon: number
-  lat: number
-}
-
 type MapViewProps = {
   // The planned trip to draw; null before the first plan.
   tripPlan: TripPlan | null
@@ -80,9 +71,24 @@ type MapViewProps = {
   forecastHour: number
   // False until the user plays or drags the forecast slider, so the truck doesn't clutter the map before then.
   isTruckVisible: boolean
+  // The clicked segment of the current plan and route, or null; App keeps it so the drawer can show it too.
+  selectedSegment: SelectedSegment | null
+  // Called with the clicked segment, or null on a click on empty map or the popup's close button.
+  onSelectSegment: (segmentClick: SegmentClick | null) => void
+  // True on wide screens, where the details open in a popup; narrow screens show them in the drawer.
+  isPopupEnabled: boolean
 }
 
-export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTruckVisible }: MapViewProps) {
+export function MapView({
+  tripPlan,
+  selectedRouteId,
+  heatmap,
+  forecastHour,
+  isTruckVisible,
+  selectedSegment,
+  onSelectSegment,
+  isPopupEnabled,
+}: MapViewProps) {
   // The first camera fits the US into the visible part of the map; the map reads this only once, when it loads.
   const [initialViewState] = useState(() => ({
     bounds: CONTIGUOUS_US_BOUNDS,
@@ -93,7 +99,6 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
   // Handle to the MapLibre map, so we can move its camera.
   const mapRef = useRef<MapRef>(null)
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
-  const [selectedSegment, setSelectedSegment] = useState<SelectedSegment | null>(null)
   // The map style's first label layer once the map has loaded; every layer of ours is drawn under it.
   // Until then (or if the style has no such layer) our layers go on top.
   const [labelLayerId, setLabelLayerId] = useState<string | undefined>(undefined)
@@ -143,10 +148,7 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
     })
   }, [tripPlan])
 
-  // A popup left over from an older plan or another route is hidden instead of reset, so no effect is needed.
-  const visibleSegment =
-    selectedSegment?.tripPlan === tripPlan && selectedSegment.routeId === selectedRouteId ? selectedSegment : null
-  const highlightedSegmentIndex = hoveredSegmentIndex ?? visibleSegment?.index ?? NO_SEGMENT_INDEX
+  const highlightedSegmentIndex = hoveredSegmentIndex ?? selectedSegment?.index ?? NO_SEGMENT_INDEX
 
   function handleLoad() {
     // Placing a layer under one the style doesn't have would fail, so check it exists first.
@@ -164,24 +166,18 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
   function handleClick(event: MapLayerMouseEvent) {
     const segmentIndex = event.features?.[0]?.properties?.index
 
-    // A click on empty map closes the popup.
-    if (!tripPlan || !selectedRouteId || typeof segmentIndex !== 'number') {
-      setSelectedSegment(null)
+    // A click on empty map closes the details.
+    if (typeof segmentIndex !== 'number') {
+      onSelectSegment(null)
       return
     }
 
-    setSelectedSegment({
-      tripPlan,
-      routeId: selectedRouteId,
-      index: segmentIndex,
-      lon: event.lngLat.lng,
-      lat: event.lngLat.lat,
-    })
+    onSelectSegment({ index: segmentIndex, lon: event.lngLat.lng, lat: event.lngLat.lat })
   }
 
   // The two checkpoints at the ends of the clicked stretch.
-  const segmentStart = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index] : null
-  const segmentEnd = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index + 1] : null
+  const segmentStart = selectedSegment && selectedRoute ? selectedRoute.checkpoints[selectedSegment.index] : null
+  const segmentEnd = selectedSegment && selectedRoute ? selectedRoute.checkpoints[selectedSegment.index + 1] : null
 
   return (
     <Map
@@ -286,10 +282,10 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
       {isTruckVisible && truckPosition && <TruckMarker position={truckPosition} />}
 
       {/* Miles, times, risk and weather for the clicked stretch. */}
-      {visibleSegment && segmentStart && segmentEnd && (
+      {isPopupEnabled && selectedSegment && segmentStart && segmentEnd && (
         <Popup
-          longitude={visibleSegment.lon}
-          latitude={visibleSegment.lat}
+          longitude={selectedSegment.lon}
+          latitude={selectedSegment.lat}
           // No anchor given, so MapLibre opens it on whichever side of the click fits inside the map
           // (below a segment near the top edge, instead of cut off).
           offset={SEGMENT_POPUP_OFFSET}
@@ -297,9 +293,11 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
           maxWidth="320px"
           // Our own onClick already closes it on empty-map clicks.
           closeOnClick={false}
-          onClose={() => setSelectedSegment(null)}
+          onClose={() => onSelectSegment(null)}
         >
-          <SegmentDetails start={segmentStart} end={segmentEnd} />
+          <div className="w-64">
+            <SegmentDetails start={segmentStart} end={segmentEnd} />
+          </div>
         </Popup>
       )}
 

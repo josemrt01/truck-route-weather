@@ -20,7 +20,7 @@ export function SegmentDetails({ start, end }: SegmentDetailsProps) {
   const isWindCause = worse.cause === RiskCause.WIND || worse.cause === RiskCause.WIND_LOAD_RULE
 
   return (
-    <div className="flex w-64 flex-col gap-3 text-base">
+    <div className="flex w-full flex-col gap-3 text-base">
       <div className="flex flex-col items-start gap-1.5">
         <span
           className="rounded-full px-2 py-0.5 text-sm font-semibold"

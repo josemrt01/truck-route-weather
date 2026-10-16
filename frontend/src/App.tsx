@@ -2,6 +2,7 @@ import { Drawer } from '@base-ui/react/drawer'
 import { useEffect, useState, type ElementType } from 'react'
 import { getBackendStatus } from './api/healthApi'
 import { getHeatmap } from './api/heatmapApi'
+import { DrawerSegmentDetails } from './components/DrawerSegmentDetails'
 import { ForecastSlider } from './components/ForecastSlider'
 import { MapView } from './components/MapView'
 import { PanelContent } from './components/PanelContent'
@@ -13,6 +14,7 @@ import { BackendStatus } from './types/backendStatus'
 import { DrawerStop } from './types/drawerStop'
 import { HeatmapStatus, type Heatmap } from './types/heatmap'
 import { PanelView } from './types/panelView'
+import type { SegmentClick, SelectedSegment } from './types/selectedSegment'
 import type { RoutePlan, TripPlan, TripSettings } from './types/tripPlan'
 
 // The heatmap and the plan it belongs to; a heatmap for an older plan that answers late is ignored.
@@ -40,6 +42,8 @@ function App() {
   const [isTruckVisible, setIsTruckVisible] = useState(false)
   // Where the drawer rests on narrow screens; starts full, with the form.
   const [drawerStop, setDrawerStop] = useState<DrawerStop>(DrawerStop.FULL)
+  // The clicked route segment; MapView highlights it, and its details show in the popup or the drawer.
+  const [selectedSegment, setSelectedSegment] = useState<SelectedSegment | null>(null)
   // Side panel from 1024px up, drawer below.
   const isWideScreen = useIsWideScreen()
 
@@ -47,6 +51,13 @@ function App() {
 
   // Only the heatmap of the current plan counts (same "hide instead of reset" idea as the map popup).
   const currentHeatmap = heatmapResult?.tripPlan === tripPlan ? heatmapResult : null
+
+  // A segment from an older plan or another route is hidden instead of reset (same idea as the heatmap).
+  const visibleSegment =
+    selectedSegment?.tripPlan === tripPlan && selectedSegment.routeId === selectedRouteId ? selectedSegment : null
+  // The checkpoints at both ends of the visible segment.
+  const segmentStart = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index] : null
+  const segmentEnd = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index + 1] : null
 
   // Check the backend once, when the page first loads.
   useEffect(() => {
@@ -88,6 +99,26 @@ function App() {
   function handleShowForm() {
     setPanelView(PanelView.FORM)
     setDrawerStop(DrawerStop.FULL)
+  }
+
+  function handleSelectSegment(segmentClick: SegmentClick | null) {
+    if (segmentClick === null || tripPlan === null || selectedRouteId === null) {
+      setSelectedSegment(null)
+      return
+    }
+
+    setSelectedSegment({
+      tripPlan,
+      routeId: selectedRouteId,
+      index: segmentClick.index,
+      lon: segmentClick.lon,
+      lat: segmentClick.lat,
+    })
+
+    // Narrow screens: the details open in the drawer at half height.
+    if (!isWideScreen) {
+      setDrawerStop(DrawerStop.MIDDLE)
+    }
   }
 
   // The same panel content in both layouts; only its container changes.
@@ -140,6 +171,9 @@ function App() {
           heatmap={currentHeatmap?.heatmap ?? null}
           forecastHour={forecastHour}
           isTruckVisible={isTruckVisible}
+          selectedSegment={visibleSegment}
+          onSelectSegment={handleSelectSegment}
+          isPopupEnabled={isWideScreen}
         />
         {isWideScreen && tripPlan && selectedRoute && (
           // Centered over the map, clear of the side panel (28rem) and high enough to leave MapLibre's credits visible.
@@ -163,7 +197,13 @@ function App() {
           summaryText={getDrawerSummaryText(selectedRoute)}
           aboveContent={tripPlan && selectedRoute ? renderForecastSlider(true, tripPlan, selectedRoute) : null}
         >
-          {renderPanelContent(Drawer.Content)}
+          {visibleSegment && segmentStart && segmentEnd && (
+            <DrawerSegmentDetails start={segmentStart} end={segmentEnd} onBack={() => setSelectedSegment(null)} />
+          )}
+          {/* Hidden, not removed, while a segment shows, so the form keeps its values for "Edit". */}
+          <div className={visibleSegment ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}>
+            {renderPanelContent(Drawer.Content)}
+          </div>
         </TripDrawer>
       )}
     </main>

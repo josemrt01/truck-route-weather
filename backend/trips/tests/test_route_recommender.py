@@ -24,6 +24,7 @@ def build_planned_route(
     }
     return PlannedRoute(
         label=label,
+        name=f"Route {label}",
         route=Route(geometry=[], distance_m=0.0, time_s=seconds, time_intervals=[]),
         progress=RouteProgress(miles_at=[0.0], seconds_at=[0.0, seconds]),
         assessed_checkpoints=[],
@@ -42,7 +43,7 @@ def test_no_travel_miles_decide_first():
     recommendation = recommend_route([route_a, route_b])
 
     assert recommendation.ranked_routes[0].label == "B"
-    assert recommendation.reason == "Route B has 0.0 No Travel miles vs 10.0 on Route A."
+    assert recommendation.reason == "Fewest No Travel miles: 0.0 vs 10.0 on the next best route."
 
 
 def test_severe_miles_beat_high_miles():
@@ -53,7 +54,7 @@ def test_severe_miles_beat_high_miles():
     recommendation = recommend_route([route_a, route_b])
 
     assert recommendation.ranked_routes[0].label == "B"
-    assert recommendation.reason == "Route B has 0.0 Severe miles vs 10.0 on Route A."
+    assert recommendation.reason == "Fewest Severe miles: 0.0 vs 10.0 on the next best route."
 
 
 def test_high_miles_decide_when_severe_miles_are_equal():
@@ -63,7 +64,7 @@ def test_high_miles_decide_when_severe_miles_are_equal():
     recommendation = recommend_route([route_a, route_b])
 
     assert recommendation.ranked_routes[0].label == "B"
-    assert recommendation.reason == "Route B has 5.0 High miles vs 30.0 on Route A."
+    assert recommendation.reason == "Fewest High miles: 5.0 vs 30.0 on the next best route."
 
 
 def test_average_risk_decides_when_miles_are_equal():
@@ -73,7 +74,7 @@ def test_average_risk_decides_when_miles_are_equal():
     recommendation = recommend_route([route_a, route_b])
 
     assert recommendation.ranked_routes[0].label == "B"
-    assert recommendation.reason == "Route B has a lower average risk (0.8 vs 1.2 on Route A)."
+    assert recommendation.reason == "Lowest average risk: 0.8 vs 1.2 on the next best route."
 
 
 def test_faster_route_wins_when_risk_is_equal():
@@ -83,7 +84,7 @@ def test_faster_route_wins_when_risk_is_equal():
     recommendation = recommend_route([route_b, route_a])
 
     assert recommendation.ranked_routes[0].label == "A"
-    assert recommendation.reason == "Routes A and B have equal risk; Route A is faster."
+    assert recommendation.reason == "Same risk as the next best route, and faster."
 
 
 def test_ranks_all_three_routes():
@@ -98,7 +99,7 @@ def test_single_route_is_recommended():
     recommendation = recommend_route([build_planned_route("A", ROUTE_A_SECONDS, severe=40.0)])
 
     assert recommendation.ranked_routes[0].label == "A"
-    assert recommendation.reason == "Route A is the only route found."
+    assert recommendation.reason == "The only route found."
 
 
 def test_warns_when_every_route_crosses_no_travel():

@@ -41,9 +41,10 @@ def _get_duration_seconds(planned_route: PlannedRoute) -> int:
 def _build_reason(ranked_routes: list[PlannedRoute]) -> str:
     best = ranked_routes[0]
     if len(ranked_routes) == 1:
-        return f"Route {best.label} is the only route found."
+        return "The only route found."
 
     # Compare with the runner-up and name the first thing that separated them, in ranking order.
+    # The reason shows on the recommended route's card, so it doesn't need to name that route.
     runner_up = ranked_routes[1]
     best_miles = best.risk_summary.miles_by_level
     runner_up_miles = runner_up.risk_summary.miles_by_level
@@ -56,20 +57,20 @@ def _build_reason(ranked_routes: list[PlannedRoute]) -> str:
         return _build_miles_reason(best, runner_up, RiskLevel.HIGH, "High")
     if best.risk_summary.avg_risk != runner_up.risk_summary.avg_risk:
         return (
-            f"Route {best.label} has a lower average risk "
-            f"({best.risk_summary.avg_risk} vs {runner_up.risk_summary.avg_risk} on Route {runner_up.label})."
+            f"Lowest average risk: {best.risk_summary.avg_risk} vs {runner_up.risk_summary.avg_risk} "
+            "on the next best route."
         )
 
     # Same risk on every count, so the shorter duration decided.
-    return f"Routes {best.label} and {runner_up.label} have equal risk; Route {best.label} is faster."
+    return "Same risk as the next best route, and faster."
 
 
 def _build_miles_reason(best: PlannedRoute, runner_up: PlannedRoute, level: RiskLevel, level_name: str) -> str:
-    # e.g. "Route B has 0.0 Severe miles vs 40.0 on Route A."
+    # e.g. "Fewest Severe miles: 0.0 vs 40.0 on the next best route."
     best_miles = best.risk_summary.miles_by_level[level]
     runner_up_miles = runner_up.risk_summary.miles_by_level[level]
 
-    return f"Route {best.label} has {best_miles} {level_name} miles vs {runner_up_miles} on Route {runner_up.label}."
+    return f"Fewest {level_name} miles: {best_miles} vs {runner_up_miles} on the next best route."
 
 
 def _build_warning(ranked_routes: list[PlannedRoute]) -> str | None:

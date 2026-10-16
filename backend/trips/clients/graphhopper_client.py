@@ -5,7 +5,7 @@ from django.conf import settings
 
 from trips.constants import COUNTRY_CODE, HTTP_TIMEOUT_SECONDS, ROUTE_COUNT, ROUTING_PROFILE
 from trips.exceptions import GraphHopperError, RoutingError
-from trips.types import LonLat, Place, Route, TimeInterval
+from trips.types import LonLat, Place, RoadInterval, Route, TimeInterval
 
 # Language of place names in geocoding results; used by search_places.
 GEOCODING_LOCALE = "en"
@@ -79,6 +79,8 @@ def get_routes(origin: LonLat, destination: LonLat) -> list[Route]:
             ("instructions", "false"),
             # Driving time per stretch of road, used to time each checkpoint.
             ("details", "time"),
+            # Road numbers per stretch ("I 45"), used to name each route.
+            ("details", "street_ref"),
             # Ask for alternative routes, not just the best one.
             ("algorithm", "alternative_route"),
             ("alternative_route.max_paths", str(ROUTE_COUNT)),
@@ -108,6 +110,7 @@ def _build_route(path: dict) -> Route:
         distance_m=path["distance"],
         time_s=time_s,
         time_intervals=_get_time_intervals(path, geometry, time_s),
+        road_intervals=_get_road_intervals(path),
     )
 
 
@@ -122,6 +125,24 @@ def _get_time_intervals(path: dict, geometry: list[LonLat], time_s: float) -> li
         TimeInterval(start_index=start_index, end_index=end_index, seconds=milliseconds / MILLISECONDS_PER_SECOND)
         for start_index, end_index, milliseconds in time_details
     ]
+
+
+def _get_road_intervals(path: dict) -> list[RoadInterval]:
+    road_intervals = []
+
+    for start_index, end_index, road_refs_text in path.get("details", {}).get("street_ref", []):
+        # Local streets have no road number.
+        if not road_refs_text:
+            continue
+
+        # Where highways run together GraphHopper lists them all: "I 45, US 287".
+        road_refs = []
+        for road_ref in road_refs_text.split(","):
+            road_refs.append(road_ref.strip())
+
+        road_intervals.append(RoadInterval(start_index=start_index, end_index=end_index, road_refs=road_refs))
+
+    return road_intervals
 
 
 def _get_json(path: str, params: list[tuple[str, str]]) -> dict:

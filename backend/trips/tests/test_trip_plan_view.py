@@ -87,6 +87,8 @@ def test_returns_places_route_and_checkpoints():
     # One fake route: it is Route A and the recommended one.
     assert trip_plan["recommended_route_id"] == "A"
     assert route["id"] == "A"
+    # The fake route has no road numbers, so it gets a numbered name.
+    assert route["name"] == "Route 1"
     assert route["rank"] == 1
     assert route["geometry"] == [[-96.797, 32.7767], [-95.3698, 29.7604]]
     # Our own measured total for the fake straight line, not GraphHopper's distance.
@@ -381,7 +383,7 @@ def test_recommends_fastest_route_when_risk_is_equal(monkeypatch):
     trip_plan = post_trip_plan(VALID_BODY).json()
 
     assert trip_plan["recommended_route_id"] == "A"
-    assert trip_plan["reason"] == "Routes A and B have equal risk; Route A is faster."
+    assert trip_plan["reason"] == "Same risk as the next best route, and faster."
     assert trip_plan["warning"] is None
 
 

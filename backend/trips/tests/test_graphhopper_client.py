@@ -5,7 +5,7 @@ from django.conf import settings
 from trips.clients.graphhopper_client import get_coordinates_from_text, get_routes, search_places
 from trips.exceptions import GraphHopperError, RoutingError
 from trips.tests.test_data import DALLAS_PLACE, DALLAS_POINT, HOUSTON_POINT
-from trips.types import Place, Route, TimeInterval
+from trips.types import Place, RoadInterval, Route, TimeInterval
 
 
 @responses.activate
@@ -129,8 +129,11 @@ def test_get_routes_returns_geometry_distance_time_and_time_intervals():
                     "distance": 385000.5,
                     "time": 13020000,
                     "points": {"coordinates": [list(DALLAS_POINT), [-96.0, 31.0], list(HOUSTON_POINT)]},
-                    # GraphHopper time details: [from_index, to_index, milliseconds].
-                    "details": {"time": [[0, 1, 7020000], [1, 2, 6000000]]},
+                    # GraphHopper details: [from_index, to_index, value]; a stretch without a road number is None.
+                    "details": {
+                        "time": [[0, 1, 7020000], [1, 2, 6000000]],
+                        "street_ref": [[0, 1, "I 45, US 287"], [1, 2, None]],
+                    },
                 }
             ]
         },
@@ -146,10 +149,13 @@ def test_get_routes_returns_geometry_distance_time_and_time_intervals():
             TimeInterval(start_index=0, end_index=1, seconds=7020.0),
             TimeInterval(start_index=1, end_index=2, seconds=6000.0),
         ],
+        road_intervals=[RoadInterval(start_index=0, end_index=1, road_refs=["I 45", "US 287"])],
     )
     # GraphHopper expects "lat,lon" for each point.
     assert "point=32.7767%2C-96.797" in responses.calls[0].request.url
-    assert responses.calls[0].request.params["details"] == "time"
+    # "details" is sent twice: driving time and road numbers.
+    assert "details=time" in responses.calls[0].request.url
+    assert "details=street_ref" in responses.calls[0].request.url
 
 
 @responses.activate

@@ -1,6 +1,6 @@
 """Data types shared across the trips app."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum, StrEnum
 
@@ -27,6 +27,16 @@ class TimeInterval:
 
 
 @dataclass(frozen=True)
+class RoadInterval:
+    """Road numbers for the stretch of route between two geometry indexes, e.g. ["I 45", "US 287"]
+    where two highways run together; returned inside Route."""
+
+    start_index: int
+    end_index: int
+    road_refs: list[str]
+
+
+@dataclass(frozen=True)
 class Route:
     """A driving route; returned by graphhopper_client, used by trip_plan_service."""
 
@@ -35,6 +45,8 @@ class Route:
     time_s: float
     # Time per stretch of road, so slow roads get more time than highways; used to build checkpoint ETAs.
     time_intervals: list[TimeInterval]
+    # Road numbers along the route, used by route_namer; empty when GraphHopper sends none.
+    road_intervals: list[RoadInterval] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -141,8 +153,10 @@ class RouteRiskSummary:
 class PlannedRoute:
     """One route with its checkpoints and risk; built by trip_plan_service."""
 
-    # "A", "B" or "C", from fastest to slowest.
+    # "A", "B" or "C", from fastest to slowest; the id the frontend selects routes by.
     label: str
+    # What the user sees, e.g. "via I-45"; built by route_namer.
+    name: str
     route: Route
     progress: RouteProgress
     assessed_checkpoints: list[AssessedCheckpoint]

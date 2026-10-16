@@ -1,13 +1,16 @@
-// Pads one-digit date parts ("7" -> "07"); used by getDateTimeLocalValue.
+// Digits in each date or time part ("07"); used by padDatePart.
 const DATE_PART_LENGTH = 2
+
+// Pads a one-digit date or time part: 7 -> "07".
+export function padDatePart(part: number): string {
+  return String(part).padStart(DATE_PART_LENGTH, '0')
+}
 
 // Returns the date as "YYYY-MM-DDTHH:mm" in the browser's local time, the format <input type="datetime-local"> uses.
 export function getDateTimeLocalValue(date: Date): string {
-  const pad = (part: number) => String(part).padStart(DATE_PART_LENGTH, '0')
-
   // getMonth() counts from 0 (January = 0), so add 1.
-  const datePart = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-  const timePart = `${pad(date.getHours())}:${pad(date.getMinutes())}`
+  const datePart = `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`
+  const timePart = `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`
 
   return `${datePart}T${timePart}`
 }

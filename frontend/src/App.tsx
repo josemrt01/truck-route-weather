@@ -7,7 +7,6 @@ import { ForecastSlider } from './components/ForecastSlider'
 import { MapView } from './components/MapView'
 import { PanelContent } from './components/PanelContent'
 import { TripDrawer } from './components/TripDrawer'
-import { getDrawerSummaryText } from './lib/drawerSummary'
 import { getRouteById, getRouteOptionName } from './lib/tripPlanRoutes'
 import { useIsWideScreen } from './lib/useIsWideScreen'
 import { BackendStatus } from './types/backendStatus'
@@ -129,8 +128,8 @@ function App() {
     }
   }
 
-  // The same panel content in both layouts; only its container changes.
-  function renderPanelContent(scrollArea: ElementType) {
+  // The same panel content in both layouts; only its container and toolbar style change.
+  function renderPanelContent(scrollArea: ElementType, isToolbarFlat: boolean) {
     return (
       <PanelContent
         panelView={panelView}
@@ -145,6 +144,7 @@ function App() {
         onShowResults={handleShowResults}
         onSelectRoute={setSelectedRouteId}
         ScrollArea={scrollArea}
+        isToolbarFlat={isToolbarFlat}
       />
     )
   }
@@ -196,13 +196,12 @@ function App() {
       {isWideScreen ? (
         // w-[28rem] (448px) must match the left value of ROUTE_FIT_PADDING in mapConfig.ts.
         <aside className="absolute top-0 left-0 flex h-dvh w-[28rem] flex-col bg-panel text-base shadow-floating-panel">
-          {renderPanelContent('div')}
+          {renderPanelContent('div', false)}
         </aside>
       ) : (
         <TripDrawer
           stop={drawerStop}
           onStopChange={setDrawerStop}
-          summaryText={getDrawerSummaryText(selectedRoute)}
           aboveContent={tripPlan && selectedRoute ? renderForecastSlider(true, tripPlan, selectedRoute) : null}
         >
           {isSegmentShown && (
@@ -210,7 +209,7 @@ function App() {
           )}
           {/* Hidden, not removed, while a segment shows, so the form keeps its values for "Edit". */}
           <div className={isSegmentShown ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}>
-            {renderPanelContent(Drawer.Content)}
+            {renderPanelContent(Drawer.Content, true)}
           </div>
         </TripDrawer>
       )}

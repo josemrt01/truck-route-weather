@@ -8,8 +8,6 @@ type TripDrawerProps = {
   stop: DrawerStop
   // Called after a drag or a tap on the handle; App stores the new stop.
   onStopChange: (stop: DrawerStop) => void
-  // The one line shown at the low stop, e.g. "Option 1 · 3 h 27 min · Low risk".
-  summaryText: string
   // Shown just above the drawer's top edge (the compact forecast card), so it moves with the drawer;
   // hidden at the full stop.
   aboveContent?: ReactNode
@@ -18,7 +16,7 @@ type TripDrawerProps = {
 
 // The panel on narrow screens: a bottom drawer that is always open and rests at three stops. Non-modal, so the
 // map behind it keeps working.
-export function TripDrawer({ stop, onStopChange, summaryText, aboveContent, children }: TripDrawerProps) {
+export function TripDrawer({ stop, onStopChange, aboveContent, children }: TripDrawerProps) {
   return (
     <Drawer.Root
       open
@@ -58,13 +56,6 @@ export function TripDrawer({ stop, onStopChange, summaryText, aboveContent, chil
               </div>
 
               <Drawer.Title className="sr-only">Trip panel</Drawer.Title>
-
-              {/* Only at the low stop, where the toolbar and cards are off screen. */}
-              {stop === DrawerStop.LOW && (
-                <p className="shrink-0 truncate px-4 pb-3 text-center font-semibold text-shadow-letterpress">
-                  {summaryText}
-                </p>
-              )}
 
               {children}
 

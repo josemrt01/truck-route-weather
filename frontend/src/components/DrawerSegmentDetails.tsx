@@ -19,6 +19,7 @@ export function DrawerSegmentDetails({ start, end, onBack }: DrawerSegmentDetail
     <>
       <PanelToolbar
         title="Segment"
+        isFlat
         leftActions={
           <button
             type="button"

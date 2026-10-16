@@ -28,6 +28,8 @@ type PanelContentProps = {
   // Element that scrolls the form and cards: a plain div in the side panel, Drawer.Content in the drawer,
   // so the drawer can tell scrolling from dragging.
   ScrollArea?: ElementType
+  // True in the drawer, where the toolbar is flat so it blends with the drawer's handle strip.
+  isToolbarFlat?: boolean
 }
 
 // What the panel shows, in both layouts: the toolbar of the current view, the trip summary, then the form or the
@@ -45,6 +47,7 @@ export function PanelContent({
   onShowResults,
   onSelectRoute,
   ScrollArea = 'div',
+  isToolbarFlat = false,
 }: PanelContentProps) {
   return (
     <>
@@ -52,6 +55,7 @@ export function PanelContent({
       {panelView === PanelView.FORM ? (
         <PanelToolbar
           title="Plan a trip"
+          isFlat={isToolbarFlat}
           leftActions={
             tripPlan && (
               <button
@@ -68,6 +72,7 @@ export function PanelContent({
       ) : (
         <PanelToolbar
           title="Routes"
+          isFlat={isToolbarFlat}
           rightActions={
             <>
               <button

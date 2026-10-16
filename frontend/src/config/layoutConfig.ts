@@ -2,8 +2,9 @@
 // side panel; used by useIsWideScreen and MapView.
 export const NARROW_SCREEN_QUERY = '(max-width: 1023px)'
 
-// Drawer height at its low stop: the handle and the one-line summary; used by DRAWER_SNAP_POINTS and drawerStops.
-export const DRAWER_LOW_HEIGHT = '96px'
+// Drawer height at its low stop: just the handle and the toolbar (about 20px + 59px); used by DRAWER_SNAP_POINTS
+// and drawerStops.
+export const DRAWER_LOW_HEIGHT = '80px'
 
 // Drawer height at its middle stop, as a share of the screen height; used by drawerStops and getRouteFitPadding.
 export const DRAWER_MIDDLE_FRACTION = 0.5

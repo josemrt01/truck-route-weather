@@ -4,7 +4,7 @@ import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '..
 import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
 import { DEFAULT_TRUCK_WEIGHT_LB } from '../config/truckConfig'
 import { getDateTimeLocalValue } from '../lib/dateTime'
-import { getMissingPlaceErrors } from '../lib/tripFormValidation'
+import { getRequiredFieldErrors } from '../lib/tripFormValidation'
 import { buildTripPlanRequest } from '../lib/tripPlanRequest'
 import { TripPlanError, TripPlanField, type FieldErrors, type LonLat, type Place, type TripPlan } from '../types/tripPlan'
 import { FormField } from './FormField'
@@ -40,16 +40,22 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     setFieldErrors({})
     setGeneralError(null)
 
-    // Blank places are caught here, so both messages show at once and no request is sent.
-    const missingPlaceErrors = getMissingPlaceErrors(origin, destination)
-    if (Object.keys(missingPlaceErrors).length > 0) {
-      setFieldErrors(missingPlaceErrors)
+    // Blank required fields are caught here, so every message shows at once and no request is sent.
+    // The spacing select always has a value, so it isn't checked.
+    const requiredFieldErrors = getRequiredFieldErrors([
+      { field: TripPlanField.ORIGIN, text: origin },
+      { field: TripPlanField.DESTINATION, text: destination },
+      { field: TripPlanField.DEPARTURE, text: departureLocal },
+      { field: TripPlanField.WEIGHT_LB, text: weightText },
+    ])
+    if (Object.keys(requiredFieldErrors).length > 0) {
+      setFieldErrors(requiredFieldErrors)
       return
     }
 
     setIsPlanning(true)
 
-    // An empty box becomes 0, which the backend rejects with a message under the field.
+    // The box isn't blank here; out-of-range weights get their message from the backend.
     const weightLb = Number(weightText)
 
     try {
@@ -137,6 +143,7 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
         <FormField
           id="origin-input"
           label="Origin"
+          isRequired
           error={getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT)}
         >
           <PlaceSearchInput
@@ -145,6 +152,7 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
             placeholder="Dallas, TX"
             isPlaceSelected={originPoint !== null}
             isInvalid={Boolean(getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT))}
+            isRequired
             clearLabel="Clear origin"
             onTextChange={handleOriginTextChange}
             onPlaceSelect={handleOriginSelect}
@@ -154,6 +162,7 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
         <FormField
           id="destination-input"
           label="Destination"
+          isRequired
           error={getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT)}
         >
           <PlaceSearchInput
@@ -162,19 +171,21 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
             placeholder="Houston, TX"
             isPlaceSelected={destinationPoint !== null}
             isInvalid={Boolean(getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT))}
+            isRequired
             clearLabel="Clear destination"
             onTextChange={handleDestinationTextChange}
             onPlaceSelect={handleDestinationSelect}
           />
         </FormField>
 
-        <FormField id="departure-input" label="Departure" error={getFieldError(TripPlanField.DEPARTURE)}>
+        <FormField id="departure-input" label="Departure" isRequired error={getFieldError(TripPlanField.DEPARTURE)}>
           {/* The browser shows a date and time picker in the user's local time. */}
           <input
             id="departure-input"
             type="datetime-local"
             value={departureLocal}
             aria-invalid={Boolean(getFieldError(TripPlanField.DEPARTURE))}
+            aria-required
             onChange={(event) => {
               setDepartureLocal(event.target.value)
               clearErrorFor(TripPlanField.DEPARTURE)
@@ -183,11 +194,12 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
           />
         </FormField>
 
-        <FormField id="spacing-input" label="Checkpoint every" error={getFieldError(TripPlanField.SPACING_MI)}>
+        <FormField id="spacing-input" label="Checkpoint every" isRequired error={getFieldError(TripPlanField.SPACING_MI)}>
           <select
             id="spacing-input"
             value={spacingMi}
             aria-invalid={Boolean(getFieldError(TripPlanField.SPACING_MI))}
+            aria-required
             onChange={(event) => {
               // Select values are always text, so turn it back into a number.
               setSpacingMi(Number(event.target.value))
@@ -203,13 +215,14 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
           </select>
         </FormField>
 
-        <FormField id="weight-input" label="Truck weight (lb)" error={getFieldError(TripPlanField.WEIGHT_LB)}>
+        <FormField id="weight-input" label="Truck weight (lb)" isRequired error={getFieldError(TripPlanField.WEIGHT_LB)}>
           <input
             id="weight-input"
             type="number"
             inputMode="numeric"
             value={weightText}
             aria-invalid={Boolean(getFieldError(TripPlanField.WEIGHT_LB))}
+            aria-required
             onChange={(event) => {
               setWeightText(event.target.value)
               clearErrorFor(TripPlanField.WEIGHT_LB)

@@ -1,15 +1,20 @@
-import { TripPlanField, type FieldErrors } from '../types/tripPlan'
+import type { FieldErrors, TripPlanField } from '../types/tripPlan'
 
-// Checked before sending, so every blank place shows its message at once
+// One required form field and the text it holds right now.
+export type RequiredFieldValue = {
+  field: TripPlanField
+  text: string
+}
+
+// Checked before sending, so every blank field shows "Required" at once
 // (the backend reports only the first problem).
-export function getMissingPlaceErrors(origin: string, destination: string): FieldErrors {
+export function getRequiredFieldErrors(requiredValues: RequiredFieldValue[]): FieldErrors {
   const fieldErrors: FieldErrors = {}
 
-  if (origin.trim() === '') {
-    fieldErrors[TripPlanField.ORIGIN] = 'Enter an origin.'
-  }
-  if (destination.trim() === '') {
-    fieldErrors[TripPlanField.DESTINATION] = 'Enter a destination.'
+  for (const requiredValue of requiredValues) {
+    if (requiredValue.text.trim() === '') {
+      fieldErrors[requiredValue.field] = 'Required'
+    }
   }
 
   return fieldErrors

@@ -19,6 +19,8 @@ type PlaceSearchInputProps = {
   // True while the text is a picked suggestion; no search runs for it.
   isPlaceSelected: boolean
   isInvalid: boolean
+  // Tells screen readers the field must be filled; FormField shows the visible *.
+  isRequired: boolean
   // Screen-reader name of the clear button, e.g. "Clear origin".
   clearLabel: string
   // The user typed or cleared the text.
@@ -33,6 +35,7 @@ export function PlaceSearchInput({
   placeholder,
   isPlaceSelected,
   isInvalid,
+  isRequired,
   clearLabel,
   onTextChange,
   onPlaceSelect,
@@ -71,6 +74,7 @@ export function PlaceSearchInput({
           id={id}
           placeholder={placeholder}
           aria-invalid={isInvalid}
+          aria-required={isRequired}
           className={`${FORM_CONTROL_CLASS_NAME} w-full pr-14`}
         />
 

@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { getTripPlan } from '../api/tripPlanApi'
-import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '../config/checkpointConfig'
-import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
-import { DEFAULT_TRUCK_WEIGHT_LB } from '../config/truckConfig'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { CHECKPOINT_SPACING_OPTIONS_MI } from '../config/checkpointConfig'
+import { FORM_CONTROL_CLASS_NAME, TOGGLE_OPTION_CLASS_NAME } from '../config/formStyles'
 import { buildDepartureIso, getFirstDepartureSelection } from '../lib/departureOptions'
 import { getRequiredFieldErrors } from '../lib/tripFormValidation'
 import { buildTripPlanRequest } from '../lib/tripPlanRequest'
@@ -32,9 +32,10 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     mode: DepartureMode.NOW,
     ...getFirstDepartureSelection(new Date()),
   }))
-  const [spacingMi, setSpacingMi] = useState<number>(DEFAULT_CHECKPOINT_SPACING_MI)
-  // Kept as the typed text, so clearing the box while editing doesn't turn into NaN.
-  const [weightText, setWeightText] = useState(String(DEFAULT_TRUCK_WEIGHT_LB))
+  // null until the user picks one of the spacing buttons.
+  const [spacingMi, setSpacingMi] = useState<number | null>(null)
+  // Kept as the typed text, so clearing the box while editing doesn't turn into NaN; starts empty.
+  const [weightText, setWeightText] = useState('')
   const [isPlanning, setIsPlanning] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   // Error not tied to one input (no road, service down, network); shown under the button.
@@ -47,16 +48,20 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     setGeneralError(null)
 
     // Blank required fields are caught here, so every message shows at once and no request is sent.
-    // The departure and spacing inputs always have a value, so they aren't checked.
+    // The departure always has a value, so it isn't checked; an unpicked spacing counts as blank.
     const requiredFieldErrors = getRequiredFieldErrors([
       { field: TripPlanField.ORIGIN, text: origin },
       { field: TripPlanField.DESTINATION, text: destination },
+      { field: TripPlanField.SPACING_MI, text: spacingMi === null ? '' : String(spacingMi) },
       { field: TripPlanField.WEIGHT_LB, text: weightText },
     ])
     if (Object.keys(requiredFieldErrors).length > 0) {
       setFieldErrors(requiredFieldErrors)
       return
     }
+
+    // Already reported above; this line tells TypeScript the spacing is picked from here on.
+    if (spacingMi === null) return
 
     setIsPlanning(true)
 
@@ -118,6 +123,14 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     return getFieldError(textField) ?? getFieldError(pointField)
   }
 
+  function handleSpacingChange(pressedValues: string[]) {
+    // Pressing the button that is already on would leave none pressed; keep the current spacing then.
+    if (pressedValues.length === 0) return
+
+    setSpacingMi(Number(pressedValues[0]))
+    clearErrorFor(TripPlanField.SPACING_MI)
+  }
+
   // Typing or clearing drops the picked point, so the text and the point never disagree.
   function handleOriginTextChange(text: string) {
     setOrigin(text)
@@ -150,7 +163,7 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       {/* Disabling the fieldset disables every input and the button while planning. */}
-      <fieldset disabled={isPlanning} className="flex flex-col gap-1.5">
+      <fieldset disabled={isPlanning} className="flex flex-col gap-4">
         <FormField
           id="origin-input"
           label="Origin"
@@ -202,24 +215,27 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
         </FormField>
 
         <FormField id="spacing-input" label="Checkpoint every" isRequired error={getFieldError(TripPlanField.SPACING_MI)}>
-          <select
+          {/* Nothing is pressed until the user picks; button values are text, so the number is turned into text. */}
+          <ToggleGroup
             id="spacing-input"
-            value={spacingMi}
-            aria-invalid={Boolean(getFieldError(TripPlanField.SPACING_MI))}
+            aria-label="Checkpoint every"
             aria-required
-            onChange={(event) => {
-              // Select values are always text, so turn it back into a number.
-              setSpacingMi(Number(event.target.value))
-              clearErrorFor(TripPlanField.SPACING_MI)
-            }}
-            className={FORM_CONTROL_CLASS_NAME}
+            variant="outline"
+            value={spacingMi === null ? [] : [String(spacingMi)]}
+            onValueChange={handleSpacingChange}
+            className="w-full"
           >
             {CHECKPOINT_SPACING_OPTIONS_MI.map((spacingOption) => (
-              <option key={spacingOption} value={spacingOption}>
+              <ToggleGroupItem
+                key={spacingOption}
+                value={String(spacingOption)}
+                aria-invalid={Boolean(getFieldError(TripPlanField.SPACING_MI))}
+                className={TOGGLE_OPTION_CLASS_NAME}
+              >
                 {spacingOption} mi
-              </option>
+              </ToggleGroupItem>
             ))}
-          </select>
+          </ToggleGroup>
         </FormField>
 
         <FormField id="weight-input" label="Truck weight (lb)" isRequired error={getFieldError(TripPlanField.WEIGHT_LB)}>
@@ -228,6 +244,7 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
             type="number"
             inputMode="numeric"
             value={weightText}
+            placeholder="e.g. 45000"
             aria-invalid={Boolean(getFieldError(TripPlanField.WEIGHT_LB))}
             aria-required
             onChange={(event) => {

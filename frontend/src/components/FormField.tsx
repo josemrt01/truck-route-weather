@@ -13,8 +13,9 @@ type FormFieldProps = {
 }
 
 export function FormField({ id, label, isRequired = false, error, children }: FormFieldProps) {
+  // A small gap inside one field (label, control, message); the form puts a bigger gap between fields.
   return (
-    <>
+    <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="font-semibold">
         {label}
         {/* Hidden from screen readers, which hear "required" from aria-required instead of "star". */}
@@ -26,6 +27,6 @@ export function FormField({ id, label, isRequired = false, error, children }: Fo
       </label>
       {children}
       {error && <p className="text-error">{error}</p>}
-    </>
+    </div>
   )
 }

@@ -5,6 +5,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { TOGGLE_OPTION_CLASS_NAME } from '../config/formStyles'
 import {
   areInSameMonth,
   getAvailableTime,
@@ -15,10 +16,6 @@ import {
   getFirstDepartureSelection,
 } from '../lib/departureOptions'
 import { DepartureMode, type DepartureChoice } from '../types/departure'
-
-// Tailwind classes for the pressed mode button: filled with the main action color.
-const PRESSED_CLASS_NAME =
-  'flex-1 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-pressed:hover:text-primary-foreground'
 
 type DepartureInputProps = {
   // id for the FormField label.
@@ -91,10 +88,10 @@ export function DepartureInput({ id, choice, isInvalid, onChoiceChange }: Depart
         onValueChange={handleModeChange}
         className="w-full"
       >
-        <ToggleGroupItem value={DepartureMode.NOW} className={PRESSED_CLASS_NAME}>
+        <ToggleGroupItem value={DepartureMode.NOW} className={TOGGLE_OPTION_CLASS_NAME}>
           Leave now
         </ToggleGroupItem>
-        <ToggleGroupItem value={DepartureMode.AT} className={PRESSED_CLASS_NAME}>
+        <ToggleGroupItem value={DepartureMode.AT} className={TOGGLE_OPTION_CLASS_NAME}>
           Depart at
         </ToggleGroupItem>
       </ToggleGroup>

@@ -1,8 +1,11 @@
+from dataclasses import asdict
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from trips.clients.graphhopper_client import search_places
 from trips.constants import HEALTH_STATUS_OK
-from trips.serializers import HeatmapRequestSerializer, TripPlanRequestSerializer
+from trips.serializers import HeatmapRequestSerializer, PlaceSearchRequestSerializer, TripPlanRequestSerializer
 from trips.services.heatmap_service import create_heatmap
 from trips.services.trip_plan_service import create_trip_plan
 
@@ -38,3 +41,15 @@ class HeatmapView(APIView):
         heatmap = create_heatmap(serializer.validated_data["points"], serializer.validated_data["weight_lb"])
 
         return Response(heatmap)
+
+
+class PlaceSearchView(APIView):
+    def get(self, request):
+        # Validate the query string; a short or missing q stops here with a 400 (see exception_handler.py).
+        serializer = PlaceSearchRequestSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        # No service layer: the view only passes the text to GraphHopper and returns what it found.
+        places = search_places(serializer.validated_data["q"])
+
+        return Response([asdict(place) for place in places])

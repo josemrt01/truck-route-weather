@@ -5,6 +5,12 @@ from datetime import timedelta
 # Only places in this country are accepted; used by graphhopper_client geocoding.
 COUNTRY_CODE = "US"
 
+# Fewest characters a place search needs; used by PlaceSearchRequestSerializer (the frontend uses the same number).
+PLACE_SEARCH_MIN_CHARACTERS = 3
+
+# Longest place text accepted; used by the trip-plan and place-search request validation.
+MAX_PLACE_TEXT_LENGTH = 200
+
 # Seconds to wait for an outside API before giving up; used by the API clients.
 HTTP_TIMEOUT_SECONDS = 10
 

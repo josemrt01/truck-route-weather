@@ -8,7 +8,9 @@ from trips.constants import (
     MAX_CORRIDOR_POINTS,
     MAX_DEPARTURE_FUTURE,
     MAX_DEPARTURE_PAST,
+    MAX_PLACE_TEXT_LENGTH,
     MAX_TRUCK_WEIGHT_LB,
+    PLACE_SEARCH_MIN_CHARACTERS,
 )
 
 
@@ -40,8 +42,8 @@ class TruckWeightField(serializers.IntegerField):
 
 
 class TripPlanRequestSerializer(serializers.Serializer):
-    origin = serializers.CharField(max_length=200)
-    destination = serializers.CharField(max_length=200)
+    origin = serializers.CharField(max_length=MAX_PLACE_TEXT_LENGTH)
+    destination = serializers.CharField(max_length=MAX_PLACE_TEXT_LENGTH)
     departure = TimezoneAwareDateTimeField()
     spacing_mi = serializers.ChoiceField(choices=CHECKPOINT_SPACING_CHOICES_MI)
     weight_lb = TruckWeightField()
@@ -75,3 +77,12 @@ class HeatmapRequestSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Each point must be [lon, lat] in degrees.")
 
         return points
+
+
+class PlaceSearchRequestSerializer(serializers.Serializer):
+    # Text typed in the origin or destination input; spaces around it are trimmed before the length check.
+    q = serializers.CharField(
+        min_length=PLACE_SEARCH_MIN_CHARACTERS,
+        max_length=MAX_PLACE_TEXT_LENGTH,
+        error_messages={"min_length": f"Type at least {PLACE_SEARCH_MIN_CHARACTERS} characters."},
+    )

@@ -32,7 +32,7 @@ def get_weather_at(forecast: HourlyForecast, eta_utc: datetime) -> WeatherHour:
     """Return the forecast weather for the hour nearest eta_utc."""
     index = get_forecast_hour_index(eta_utc, forecast.first_hour_utc)
 
-    # Outside the window means we asked Open-Meteo for the wrong hours; fail loudly instead of guessing.
+    # Outside the window means the forecast has the wrong hours (requests are validated first); fail loudly.
     if index < 0 or index >= len(forecast.wind_gust_mph):
         raise ValueError(f"ETA {eta_utc.isoformat()} is outside the forecast window.")
 

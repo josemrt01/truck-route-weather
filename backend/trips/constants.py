@@ -11,17 +11,18 @@ PLACE_SEARCH_MIN_CHARACTERS = 3
 # Longest place text accepted; used by the trip-plan and place-search request validation.
 MAX_PLACE_TEXT_LENGTH = 200
 
-# Seconds to wait for an outside API before giving up; used by the API clients.
+# Seconds to wait for GraphHopper before giving up; used by graphhopper_client.
 HTTP_TIMEOUT_SECONDS = 10
 
-# Route options the app offers (the assessment asks for 3); used by graphhopper_client and trip_plan_service.
+# Route options the app offers (the assessment asks for 3); used by graphhopper_client, trip_plan_service and the
+# trip-risks request validation.
 ROUTE_COUNT = 3
 
-# Most weather points one heatmap may ask for (Open-Meteo free-plan friendly);
+# Most weather points one heatmap may have (the browser fetches their forecasts from Open-Meteo);
 # used by corridor_builder and the heatmap request validation.
 MAX_CORRIDOR_POINTS = 250
 
-# Names shown for the routes, fastest first; used by trip_plan_service.
+# Names shown for the routes, fastest first; used by trip_plan_service and the trip-risks request validation.
 ROUTE_LABELS = ("A", "B", "C")
 
 # Vehicle type GraphHopper routes for; used by graphhopper_client.
@@ -50,3 +51,11 @@ MAX_DEPARTURE_PAST = timedelta(minutes=15)
 
 # How far ahead a departure may be (weather forecasts only reach so far); used by TripPlanRequestSerializer.
 MAX_DEPARTURE_FUTURE = timedelta(days=7)
+
+# Forecast hours the heatmap slider covers, now (hour 0) through 48 hours ahead;
+# used by heatmap_service and the heatmap request validation.
+HEATMAP_HOURS = 49
+
+# Most hours one forecast sent by the browser may have (Open-Meteo forecasts reach 16 days ahead);
+# used by the trip-risks and heatmap request validation.
+MAX_FORECAST_HOURS = 16 * 24

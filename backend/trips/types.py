@@ -60,7 +60,7 @@ class Checkpoint:
 
 @dataclass(frozen=True)
 class HourlyForecast:
-    """Hour-by-hour weather for one point; returned by open_meteo_client.
+    """Hour-by-hour weather for one point; built by hourly_forecast_builder from the Open-Meteo data the browser sends.
 
     Every list holds one value per hour, and index 0 is first_hour_utc.
     """
@@ -117,9 +117,10 @@ class RiskAssessment:
 
 @dataclass(frozen=True)
 class AssessedCheckpoint:
-    """A checkpoint with the weather the truck meets there and its risk; built by trip_plan_service."""
+    """A checkpoint with the weather the truck meets there and its risk; built by trip_risk_service."""
 
-    checkpoint: Checkpoint
+    # Miles from the start; the risk summary measures segments between checkpoints with it.
+    mile: float
     # The forecast hour whose weather was used (the full hour nearest the ETA).
     forecast_hour_utc: datetime
     weather: WeatherHour
@@ -138,13 +139,13 @@ class RouteRiskSummary:
 
 
 @dataclass(frozen=True)
-class PlannedRoute:
-    """One route with its checkpoints and risk; built by trip_plan_service."""
+class AssessedRoute:
+    """One route with its checkpoints' risk and totals; built by trip_risk_service, ranked by route_recommender."""
 
     # "A", "B" or "C", from fastest to slowest; the id the frontend selects routes by.
     label: str
-    route: Route
-    progress: RouteProgress
+    # Total driving time in whole seconds; breaks ties between equally risky routes.
+    duration_s: int
     assessed_checkpoints: list[AssessedCheckpoint]
     risk_summary: RouteRiskSummary
 
@@ -154,7 +155,7 @@ class Recommendation:
     """Routes ranked best first, and why the first one wins; returned by route_recommender."""
 
     # Best first; the first one is the recommended route.
-    ranked_routes: list[PlannedRoute]
+    ranked_routes: list[AssessedRoute]
     reason: str
     # Set only when every route crosses No Travel conditions.
     warning: str | None

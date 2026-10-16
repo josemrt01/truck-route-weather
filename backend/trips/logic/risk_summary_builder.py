@@ -22,7 +22,7 @@ def build_risk_summary(assessed_checkpoints: list[AssessedCheckpoint]) -> RouteR
 
         # Conservative: the segment is as risky as its worse end.
         segment_level = max(start.risk.level, end.risk.level)
-        segment_miles = end.checkpoint.mile - start.checkpoint.mile
+        segment_miles = end.mile - start.mile
 
         miles_by_level[segment_level] += segment_miles
         weighted_level_total += segment_level * segment_miles

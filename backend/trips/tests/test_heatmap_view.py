@@ -1,46 +1,19 @@
-from datetime import UTC, datetime, timedelta
-
 import pytest
-from django.utils import timezone
 from rest_framework.test import APIClient
 
-from trips.exceptions import WeatherServiceError
-from trips.services import heatmap_service
-from trips.tests.test_data import DALLAS_POINT, HOUSTON_POINT
-from trips.types import HourlyForecast
+from trips.tests.test_data import DALLAS_POINT, HOUSTON_POINT, build_open_meteo_hourly
 
-# "Now" during these tests: 13:20 UTC, so hour 0 of the heatmap is 13:00.
-HEATMAP_NOW = datetime(2026, 10, 13, 13, 20, tzinfo=UTC)
+# 49 hours of 38 mph gusts from 13:00 UTC, as the browser gets them from Open-Meteo.
+FORECAST = build_open_meteo_hourly("2026-10-13T13:00", 49, rain_in=0.0)
+
+
+def build_point(point, forecast=FORECAST):
+    lon, lat = point
+    return {"lon": lon, "lat": lat, "forecast": forecast}
+
 
 # A request that passes validation; tests copy it and change one field.
-VALID_BODY = {"points": [list(DALLAS_POINT), list(HOUSTON_POINT)], "weight_lb": 45_000}
-
-
-@pytest.fixture(autouse=True)
-def fixed_now(monkeypatch):
-    monkeypatch.setattr(timezone, "now", lambda: HEATMAP_NOW)
-
-
-@pytest.fixture(autouse=True)
-def fake_open_meteo(monkeypatch):
-    """Return 38 mph gusts at every point and hour; the list records each requested window."""
-    requested_windows = []
-
-    def get_fake_forecasts(points, start_hour_utc, end_hour_utc):
-        requested_windows.append((start_hour_utc, end_hour_utc))
-        # Both ends are included, like Open-Meteo.
-        hour_count = int((end_hour_utc - start_hour_utc).total_seconds() / 3600) + 1
-        forecast = HourlyForecast(
-            first_hour_utc=start_hour_utc,
-            wind_gust_mph=[38.0] * hour_count,
-            wind_speed_mph=[20.0] * hour_count,
-            rain_in=[0.0] * hour_count,
-            snow_in=[0.0] * hour_count,
-        )
-        return [forecast] * len(points)
-
-    monkeypatch.setattr(heatmap_service, "get_hourly_forecasts", get_fake_forecasts)
-    return requested_windows
+VALID_BODY = {"points": [build_point(DALLAS_POINT), build_point(HOUSTON_POINT)], "weight_lb": 45_000}
 
 
 def post_heatmap(body):
@@ -52,6 +25,7 @@ def test_returns_49_hourly_levels_per_point():
 
     assert response.status_code == 200
     heatmap = response.json()
+    # Hour 0 is the forecast's first hour.
     assert heatmap["start_hour_utc"] == "2026-10-13T13:00:00Z"
     assert heatmap["hours"] == 49
     # 38 mph gusts alone are High (2); a 45,000 lb truck is over 40,000 lb, so the load rule makes them Severe (3).
@@ -72,19 +46,22 @@ def test_keeps_the_order_of_the_points():
     assert [(point["lon"], point["lat"]) for point in points] == [DALLAS_POINT, HOUSTON_POINT]
 
 
-def test_asks_for_weather_from_this_hour_to_48_hours_later(fake_open_meteo):
-    post_heatmap(VALID_BODY)
+def test_rejects_a_forecast_without_49_hours():
+    short_forecast = build_open_meteo_hourly("2026-10-13T13:00", 48)
 
-    start_hour_utc = datetime(2026, 10, 13, 13, tzinfo=UTC)
-    assert fake_open_meteo == [(start_hour_utc, start_hour_utc + timedelta(hours=48))]
+    response = post_heatmap({**VALID_BODY, "points": [build_point(DALLAS_POINT, short_forecast)]})
+
+    assert response.status_code == 400
+    assert response.json() == {"error": "Each heatmap forecast must have 49 hours.", "field": "points"}
 
 
 @pytest.mark.parametrize(
     ("body", "field"),
     [
         ({"weight_lb": 45_000}, "points"),
-        ({**VALID_BODY, "points": [list(DALLAS_POINT)] * 251}, "points"),
-        ({**VALID_BODY, "points": [[1.0]]}, "points"),
+        ({**VALID_BODY, "points": [build_point(DALLAS_POINT)] * 251}, "points"),
+        ({**VALID_BODY, "points": [build_point((-96.8, 100.0))]}, "points"),
+        ({**VALID_BODY, "points": [{"lon": -96.8, "lat": 32.7}]}, "points"),
         ({**VALID_BODY, "weight_lb": 0}, "weight_lb"),
     ],
 )
@@ -93,36 +70,3 @@ def test_rejects_invalid_input(body, field):
 
     assert response.status_code == 400
     assert response.json()["field"] == field
-
-
-@pytest.mark.parametrize(
-    ("points", "error"),
-    [
-        ([[1.0]], "Ensure this field has at least 2 elements."),
-        ([["a", "b"]], "A valid number is required."),
-    ],
-)
-def test_reports_a_readable_message_for_a_bad_point(points, error):
-    # DRF nests errors of list items one level deeper; the user still gets plain text.
-    response = post_heatmap({**VALID_BODY, "points": points})
-
-    assert response.json() == {"error": error, "field": "points"}
-
-
-def test_rejects_points_outside_the_globe():
-    response = post_heatmap({**VALID_BODY, "points": [[-96.8, 100.0]]})
-
-    assert response.status_code == 400
-    assert response.json() == {"error": "Point must be [lon, lat] in degrees.", "field": "points"}
-
-
-def test_reports_weather_failure_as_service_unavailable(monkeypatch):
-    def raise_weather_error(points, start_hour_utc, end_hour_utc):
-        raise WeatherServiceError("Open-Meteo answered with status 500.")
-
-    monkeypatch.setattr(heatmap_service, "get_hourly_forecasts", raise_weather_error)
-
-    response = post_heatmap(VALID_BODY)
-
-    assert response.status_code == 503
-    assert response.json()["error"] == "The weather service is unavailable. Please try again in a minute."

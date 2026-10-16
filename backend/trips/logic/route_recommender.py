@@ -4,13 +4,13 @@ Order of what counts, most important first: No Travel miles, Severe miles, High 
 duration. The assessment's list starts at Severe miles; No Travel goes in front because it is worse.
 """
 
-from trips.types import PlannedRoute, Recommendation, RiskLevel
+from trips.types import AssessedRoute, Recommendation, RiskLevel
 
 
-def recommend_route(planned_routes: list[PlannedRoute]) -> Recommendation:
+def recommend_route(assessed_routes: list[AssessedRoute]) -> Recommendation:
     """Return the routes ranked best first, the reason the first one wins, and a warning if needed."""
     # Copy first, so the caller's list keeps its A, B, C order.
-    ranked_routes = list(planned_routes)
+    ranked_routes = list(assessed_routes)
     ranked_routes.sort(key=_get_ranking_values)
 
     return Recommendation(
@@ -20,25 +20,20 @@ def recommend_route(planned_routes: list[PlannedRoute]) -> Recommendation:
     )
 
 
-def _get_ranking_values(planned_route: PlannedRoute) -> list[float]:
+def _get_ranking_values(assessed_route: AssessedRoute) -> list[float]:
     # Python compares these lists item by item and the first item that differs decides, like
     # Comparator.comparing(noTravel).thenComparing(severe)... in Java. Lower is better for every item.
-    miles = planned_route.risk_summary.miles_by_level
+    miles = assessed_route.risk_summary.miles_by_level
     return [
         miles[RiskLevel.NO_TRAVEL],
         miles[RiskLevel.SEVERE],
         miles[RiskLevel.HIGH],
-        planned_route.risk_summary.avg_risk,
-        _get_duration_seconds(planned_route),
+        assessed_route.risk_summary.avg_risk,
+        assessed_route.duration_s,
     ]
 
 
-def _get_duration_seconds(planned_route: PlannedRoute) -> int:
-    # Whole seconds, the same value the response shows as duration_s.
-    return round(planned_route.progress.seconds_at[-1])
-
-
-def _build_reason(ranked_routes: list[PlannedRoute]) -> str:
+def _build_reason(ranked_routes: list[AssessedRoute]) -> str:
     best = ranked_routes[0]
     if len(ranked_routes) == 1:
         return "The only route found."
@@ -65,7 +60,7 @@ def _build_reason(ranked_routes: list[PlannedRoute]) -> str:
     return "Same risk as the next best route, and faster."
 
 
-def _build_miles_reason(best: PlannedRoute, runner_up: PlannedRoute, level: RiskLevel, level_name: str) -> str:
+def _build_miles_reason(best: AssessedRoute, runner_up: AssessedRoute, level: RiskLevel, level_name: str) -> str:
     # e.g. "Fewest Severe miles: 0.0 vs 40.0 on the next best route."
     best_miles = best.risk_summary.miles_by_level[level]
     runner_up_miles = runner_up.risk_summary.miles_by_level[level]
@@ -73,7 +68,7 @@ def _build_miles_reason(best: PlannedRoute, runner_up: PlannedRoute, level: Risk
     return f"Fewest {level_name} miles: {best_miles} vs {runner_up_miles} on the next best route."
 
 
-def _build_warning(ranked_routes: list[PlannedRoute]) -> str | None:
+def _build_warning(ranked_routes: list[AssessedRoute]) -> str | None:
     # Routes are ranked by No Travel miles first, so if even the best route has some, every route does.
     if ranked_routes[0].risk_summary.miles_by_level[RiskLevel.NO_TRAVEL] > 0:
         return "Every route crosses No Travel conditions. Consider delaying departure."

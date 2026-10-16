@@ -2,7 +2,6 @@ from trips.logic.risk_summary_builder import build_risk_summary
 from trips.tests.test_data import DEPARTURE_UTC
 from trips.types import (
     AssessedCheckpoint,
-    Checkpoint,
     RiskAssessment,
     RiskCause,
     RiskLevel,
@@ -24,7 +23,7 @@ def build_assessed_checkpoints(miles_and_levels: list[tuple[float, RiskLevel]]) 
     """Checkpoints with only the mile and level filled in meaningfully."""
     return [
         AssessedCheckpoint(
-            checkpoint=Checkpoint(mile=mile, lat=0.0, lon=0.0, eta_utc=DEPARTURE_UTC, previous_point_index=0),
+            mile=mile,
             forecast_hour_utc=DEPARTURE_UTC,
             weather=CALM_WEATHER,
             risk=RiskAssessment(level=level, cause=RiskCause.NONE),

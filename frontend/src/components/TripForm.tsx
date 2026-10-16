@@ -3,9 +3,11 @@ import { getTripPlan } from '../api/tripPlanApi'
 import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '../config/checkpointConfig'
 import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
 import { DEFAULT_TRUCK_WEIGHT_LB } from '../config/truckConfig'
-import { convertDateTimeLocalToIso, getDateTimeLocalValue } from '../lib/dateTime'
-import { TripPlanError, TripPlanField, type TripPlan } from '../types/tripPlan'
+import { getDateTimeLocalValue } from '../lib/dateTime'
+import { buildTripPlanRequest } from '../lib/tripPlanRequest'
+import { TripPlanError, TripPlanField, type LonLat, type Place, type TripPlan } from '../types/tripPlan'
 import { FormField } from './FormField'
+import { PlaceSearchInput } from './PlaceSearchInput'
 
 // Field names the form has an input for; an error on any other field is shown as a general error.
 const FORM_FIELDS: readonly string[] = Object.values(TripPlanField)
@@ -18,6 +20,9 @@ type TripFormProps = {
 export function TripForm({ onTripPlanned }: TripFormProps) {
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
+  // Coordinates of the picked suggestion; null while the text is typed by hand.
+  const [originPoint, setOriginPoint] = useState<LonLat | null>(null)
+  const [destinationPoint, setDestinationPoint] = useState<LonLat | null>(null)
   // Starts at the current local time; useState runs this function only on the first render.
   const [departureLocal, setDepartureLocal] = useState(() => getDateTimeLocalValue(new Date()))
   const [spacingMi, setSpacingMi] = useState<number>(DEFAULT_CHECKPOINT_SPACING_MI)
@@ -36,13 +41,17 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     const weightLb = Number(weightText)
 
     try {
-      const tripPlan = await getTripPlan({
-        origin: origin.trim(),
-        destination: destination.trim(),
-        departure: convertDateTimeLocalToIso(departureLocal),
-        spacing_mi: spacingMi,
-        weight_lb: weightLb,
-      })
+      const tripPlan = await getTripPlan(
+        buildTripPlanRequest({
+          origin,
+          originPoint,
+          destination,
+          destinationPoint,
+          departureLocal,
+          spacingMi,
+          weightLb,
+        }),
+      )
       onTripPlanned(tripPlan, weightLb)
     } catch (caughtError) {
       // getTripPlan only throws TripPlanError; anything else is an unexpected bug in our own code.
@@ -63,6 +72,40 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     return error?.field === field ? error.message : undefined
   }
 
+  // A place error can be on its text or on its picked point; both show under the same input.
+  function getPlaceError(textField: TripPlanField, pointField: TripPlanField): string | undefined {
+    return getFieldError(textField) ?? getFieldError(pointField)
+  }
+
+  // Typing or clearing drops the picked point, so the text and the point never disagree.
+  function handleOriginTextChange(text: string) {
+    setOrigin(text)
+    setOriginPoint(null)
+    clearErrorFor(TripPlanField.ORIGIN)
+    clearErrorFor(TripPlanField.ORIGIN_POINT)
+  }
+
+  function handleOriginSelect(place: Place) {
+    setOrigin(place.label)
+    setOriginPoint([place.lon, place.lat])
+    clearErrorFor(TripPlanField.ORIGIN)
+    clearErrorFor(TripPlanField.ORIGIN_POINT)
+  }
+
+  function handleDestinationTextChange(text: string) {
+    setDestination(text)
+    setDestinationPoint(null)
+    clearErrorFor(TripPlanField.DESTINATION)
+    clearErrorFor(TripPlanField.DESTINATION_POINT)
+  }
+
+  function handleDestinationSelect(place: Place) {
+    setDestination(place.label)
+    setDestinationPoint([place.lon, place.lat])
+    clearErrorFor(TripPlanField.DESTINATION)
+    clearErrorFor(TripPlanField.DESTINATION_POINT)
+  }
+
   // Errors with no field, or on a field this form has no input for, show under the button.
   const generalError = error && (error.field === null || !FORM_FIELDS.includes(error.field)) ? error.message : null
 
@@ -70,31 +113,37 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     <form onSubmit={handleSubmit}>
       {/* Disabling the fieldset disables every input and the button while planning. */}
       <fieldset disabled={isPlanning} className="flex flex-col gap-1.5">
-        <FormField id="origin-input" label="Origin" error={getFieldError(TripPlanField.ORIGIN)}>
-          <input
+        <FormField
+          id="origin-input"
+          label="Origin"
+          error={getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT)}
+        >
+          <PlaceSearchInput
             id="origin-input"
-            value={origin}
+            text={origin}
             placeholder="Dallas, TX"
-            aria-invalid={Boolean(getFieldError(TripPlanField.ORIGIN))}
-            onChange={(event) => {
-              setOrigin(event.target.value)
-              clearErrorFor(TripPlanField.ORIGIN)
-            }}
-            className={FORM_CONTROL_CLASS_NAME}
+            isPlaceSelected={originPoint !== null}
+            isInvalid={Boolean(getPlaceError(TripPlanField.ORIGIN, TripPlanField.ORIGIN_POINT))}
+            clearLabel="Clear origin"
+            onTextChange={handleOriginTextChange}
+            onPlaceSelect={handleOriginSelect}
           />
         </FormField>
 
-        <FormField id="destination-input" label="Destination" error={getFieldError(TripPlanField.DESTINATION)}>
-          <input
+        <FormField
+          id="destination-input"
+          label="Destination"
+          error={getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT)}
+        >
+          <PlaceSearchInput
             id="destination-input"
-            value={destination}
+            text={destination}
             placeholder="Houston, TX"
-            aria-invalid={Boolean(getFieldError(TripPlanField.DESTINATION))}
-            onChange={(event) => {
-              setDestination(event.target.value)
-              clearErrorFor(TripPlanField.DESTINATION)
-            }}
-            className={FORM_CONTROL_CLASS_NAME}
+            isPlaceSelected={destinationPoint !== null}
+            isInvalid={Boolean(getPlaceError(TripPlanField.DESTINATION, TripPlanField.DESTINATION_POINT))}
+            clearLabel="Clear destination"
+            onTextChange={handleDestinationTextChange}
+            onPlaceSelect={handleDestinationSelect}
           />
         </FormField>
 

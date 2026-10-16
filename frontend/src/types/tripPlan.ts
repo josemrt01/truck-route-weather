@@ -40,7 +40,11 @@ export type MilesByLevel = {
 // Body of POST /api/trip-plans; matches TripPlanRequestSerializer in the backend.
 export type TripPlanRequest = {
   origin: string
+  // Sent only for a picked suggestion; the backend then skips geocoding the origin text.
+  origin_point?: LonLat
   destination: string
+  // Same as origin_point, for the destination.
+  destination_point?: LonLat
   // ISO time with a timezone offset, e.g. "2026-10-13T13:00:00.000Z".
   departure: string
   spacing_mi: number
@@ -88,6 +92,10 @@ export type TripPlan = {
 export const TripPlanField = {
   ORIGIN: 'origin',
   DESTINATION: 'destination',
+  // A bad picked point; its error shows under the origin input.
+  ORIGIN_POINT: 'origin_point',
+  // A bad picked point; its error shows under the destination input.
+  DESTINATION_POINT: 'destination_point',
   DEPARTURE: 'departure',
   SPACING_MI: 'spacing_mi',
   WEIGHT_LB: 'weight_lb',

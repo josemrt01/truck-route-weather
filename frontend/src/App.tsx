@@ -58,6 +58,8 @@ function App() {
   // The checkpoints at both ends of the visible segment.
   const segmentStart = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index] : null
   const segmentEnd = visibleSegment && selectedRoute ? selectedRoute.checkpoints[visibleSegment.index + 1] : null
+  // True only when both ends of the segment exist, so the drawer shows its details instead of the panel.
+  const isSegmentShown = segmentStart != null && segmentEnd != null
 
   // Check the backend once, when the page first loads.
   useEffect(() => {
@@ -101,6 +103,12 @@ function App() {
     setDrawerStop(DrawerStop.FULL)
   }
 
+  // "Routes": back to the cards, with the drawer in the middle so the cards and the map show together.
+  function handleShowResults() {
+    setPanelView(PanelView.RESULTS)
+    setDrawerStop(DrawerStop.MIDDLE)
+  }
+
   function handleSelectSegment(segmentClick: SegmentClick | null) {
     if (segmentClick === null || tripPlan === null || selectedRouteId === null) {
       setSelectedSegment(null)
@@ -134,7 +142,7 @@ function App() {
         onTripPlanned={handleTripPlanned}
         onClearTrip={handleClearTrip}
         onShowForm={handleShowForm}
-        onShowResults={() => setPanelView(PanelView.RESULTS)}
+        onShowResults={handleShowResults}
         onSelectRoute={setSelectedRouteId}
         ScrollArea={scrollArea}
       />
@@ -197,11 +205,11 @@ function App() {
           summaryText={getDrawerSummaryText(selectedRoute)}
           aboveContent={tripPlan && selectedRoute ? renderForecastSlider(true, tripPlan, selectedRoute) : null}
         >
-          {visibleSegment && segmentStart && segmentEnd && (
+          {isSegmentShown && (
             <DrawerSegmentDetails start={segmentStart} end={segmentEnd} onBack={() => setSelectedSegment(null)} />
           )}
           {/* Hidden, not removed, while a segment shows, so the form keeps its values for "Edit". */}
-          <div className={visibleSegment ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}>
+          <div className={isSegmentShown ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}>
             {renderPanelContent(Drawer.Content)}
           </div>
         </TripDrawer>

@@ -29,7 +29,8 @@ type ForecastSliderProps = {
   arrivalUtc: string
 }
 
-// Forecast card: the time shown, play/pause with the 0-48 h slider, the trip's hours and the color legend. App places it: over the map on wide screens, on top of the drawer (compact) on narrow ones.
+// Forecast card: the time shown, play/pause with the 0-48 h slider, the trip's hours and the color legend.
+// App places it: over the map on wide screens, on top of the drawer (compact) on narrow ones.
 export function ForecastSlider({
   isCompact,
   hour,
@@ -174,7 +175,7 @@ export function ForecastSlider({
         </div>
       </div>
 
-  {!isCompact && heatmap && (
+      {!isCompact && heatmap && (
         <span className="flex items-center gap-2">
           <TruckIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
           {/* A sample of the blue bar under the slider, so it's clear the bar is the trip. */}

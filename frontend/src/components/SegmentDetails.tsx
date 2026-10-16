@@ -12,8 +12,9 @@ type SegmentDetailsProps = {
   end: Checkpoint
 }
 
-// Popup for a clicked stretch of route, in plain words: how risky it is and why, when the truck passes,
-// and the weather there. The weather comes from the end that gave the stretch its color.
+// Details for a clicked segment of the route, in plain words: how risky it is and why, when the truck passes,
+// and the weather there. The weather comes from the end that gave the segment its color.
+// Shown in the map popup on wide screens and in the bottom drawer on narrow screens.
 export function SegmentDetails({ start, end }: SegmentDetailsProps) {
   const worse = getWorseCheckpoint(start, end)
   const levelColor = RISK_LEVEL_COLORS[worse.level]

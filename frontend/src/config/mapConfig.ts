@@ -39,11 +39,12 @@ export const CONTIGUOUS_US_BOUNDS: [[number, number], [number, number]] = [
   [-66.9, 49.4],
 ]
 
-// Pixels kept around the US on the first view; left clears the side panel (448px, lg:w-[28rem] in App)
+// Pixels kept around the US on the first view; left clears the side panel (448px, w-[28rem] in App)
 // so the country is centered in the part of the map you can see; used by MapView.
 export const INITIAL_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 488 }
 
-// Same as INITIAL_FIT_PADDING on narrow screens, where the panel sits above the map; used by MapView.
+// Small even padding for the first view on narrow screens, where the bottom drawer starts full height
+// and the map is not visible behind it yet; used by MapView.
 export const INITIAL_FIT_PADDING_NARROW = { top: 20, right: 20, bottom: 20, left: 20 }
 
 // Name of the route data (one line per stretch between checkpoints) inside MapLibre; used by MapView.
@@ -150,7 +151,7 @@ export const SEGMENT_POPUP_OFFSET = 10
 export const FIT_ANIMATION_MS = 1000
 
 // Pixels kept around the route when zooming to it, so the start and end pins aren't at the edge;
-// left clears the side panel (448px, lg:w-[28rem] in App) plus 100px, bottom clears the forecast card; used by MapView.
+// left clears the side panel (448px, w-[28rem] in App) plus 100px, bottom clears the forecast card; used by MapView.
 export const ROUTE_FIT_PADDING = { top: 100, right: 100, bottom: 280, left: 548 }
 
 // Top and side padding when zooming to a route on narrow screens; the bottom comes from the drawer's height

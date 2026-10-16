@@ -21,9 +21,12 @@ class TripPlanView(APIView):
         serializer = TripPlanRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        # The points are missing unless the user picked a suggestion; .get() gives None then.
         trip_plan = create_trip_plan(
             serializer.validated_data["origin"],
+            serializer.validated_data.get("origin_point"),
             serializer.validated_data["destination"],
+            serializer.validated_data.get("destination_point"),
             serializer.validated_data["departure"],
             serializer.validated_data["spacing_mi"],
             serializer.validated_data["weight_lb"],

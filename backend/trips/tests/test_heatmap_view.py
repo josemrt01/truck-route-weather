@@ -113,7 +113,7 @@ def test_rejects_points_outside_the_globe():
     response = post_heatmap({**VALID_BODY, "points": [[-96.8, 100.0]]})
 
     assert response.status_code == 400
-    assert response.json() == {"error": "Each point must be [lon, lat] in degrees.", "field": "points"}
+    assert response.json() == {"error": "Point must be [lon, lat] in degrees.", "field": "points"}
 
 
 def test_reports_weather_failure_as_service_unavailable(monkeypatch):

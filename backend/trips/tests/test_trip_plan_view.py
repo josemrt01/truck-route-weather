@@ -6,7 +6,7 @@ from rest_framework.test import APIClient
 
 from trips.exceptions import GraphHopperError, RoutingError, WeatherServiceError
 from trips.services import trip_plan_service
-from trips.tests.test_data import DALLAS_PLACE, DEPARTURE_ISO, FIXED_NOW, HOUSTON_PLACE
+from trips.tests.test_data import DALLAS_PLACE, DALLAS_POINT, DEPARTURE_ISO, FIXED_NOW, HOUSTON_PLACE
 from trips.types import HourlyForecast, Recommendation, Route, TimeInterval
 
 # Text typed in the form mapped to the place geocoding returns; used by the fake geocoder below.
@@ -237,6 +237,43 @@ def test_reports_unknown_place_on_its_field():
         "error": "Couldn't find 'Atlantis'. Try a city and state.",
         "field": "destination",
     }
+
+
+def test_uses_a_sent_point_instead_of_geocoding_its_text(monkeypatch):
+    geocoded_texts = []
+
+    def get_fake_coordinates(text):
+        geocoded_texts.append(text)
+        return PLACES_BY_TEXT.get(text)
+
+    monkeypatch.setattr(trip_plan_service, "get_coordinates_from_text", get_fake_coordinates)
+
+    response = post_trip_plan({**VALID_BODY, "origin": "Downtown Dallas", "origin_point": list(DALLAS_POINT)})
+
+    assert response.status_code == 200
+    # Only the destination had no point, so only it was geocoded.
+    assert geocoded_texts == ["Houston, TX"]
+    # The typed text becomes the label of the sent point.
+    assert response.json()["origin"] == {"label": "Downtown Dallas", "lat": 32.7767, "lon": -96.797}
+
+
+@pytest.mark.parametrize(
+    ("body", "error", "field"),
+    [
+        ({**VALID_BODY, "origin_point": [-96.8, 100.0]}, "Point must be [lon, lat] in degrees.", "origin_point"),
+        (
+            {**VALID_BODY, "destination_point": [200.0, 29.7]},
+            "Point must be [lon, lat] in degrees.",
+            "destination_point",
+        ),
+        ({**VALID_BODY, "origin_point": [1.0]}, "Ensure this field has at least 2 elements.", "origin_point"),
+    ],
+)
+def test_rejects_a_bad_point_on_its_field(body, error, field):
+    response = post_trip_plan(body)
+
+    assert response.status_code == 400
+    assert response.json() == {"error": error, "field": field}
 
 
 def test_reports_routing_error_as_bad_request(monkeypatch):

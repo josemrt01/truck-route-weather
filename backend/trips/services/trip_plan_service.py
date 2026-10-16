@@ -1,4 +1,4 @@
-"""Builds a trip plan from two place names."""
+"""Builds a trip plan from two places, typed or picked."""
 
 from dataclasses import asdict
 from datetime import datetime
@@ -21,11 +21,17 @@ COORDINATE_DECIMALS = 5
 
 
 def create_trip_plan(
-    origin_text: str, destination_text: str, departure_utc: datetime, spacing_mi: int, weight_lb: int
+    origin_text: str,
+    origin_point: LonLat | None,
+    destination_text: str,
+    destination_point: LonLat | None,
+    departure_utc: datetime,
+    spacing_mi: int,
+    weight_lb: int,
 ) -> dict:
-    # Turn the typed place names into coordinates.
-    origin = _get_place_or_raise(origin_text, field="origin")
-    destination = _get_place_or_raise(destination_text, field="destination")
+    # Use the picked coordinates, or turn the typed place names into coordinates.
+    origin = _get_place_or_raise(origin_text, origin_point, field="origin")
+    destination = _get_place_or_raise(destination_text, destination_point, field="destination")
 
     # Ask GraphHopper for up to 3 driving routes between both points.
     routes = get_routes((origin.lon, origin.lat), (destination.lon, destination.lat))
@@ -129,7 +135,12 @@ def _serialize_route(planned_route: PlannedRoute, rank: int) -> dict:
     }
 
 
-def _get_place_or_raise(text: str, field: str) -> Place:
+def _get_place_or_raise(text: str, point: LonLat | None, field: str) -> Place:
+    # A picked suggestion already has its coordinates, so there is nothing to look up.
+    if point is not None:
+        lon, lat = point
+        return Place(label=text, lat=lat, lon=lon)
+
     place = get_coordinates_from_text(text)
 
     # Report which form field had the unknown place, so the frontend can show the error there.

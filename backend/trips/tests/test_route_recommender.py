@@ -24,7 +24,6 @@ def build_planned_route(
     }
     return PlannedRoute(
         label=label,
-        name=f"Route {label}",
         route=Route(geometry=[], distance_m=0.0, time_s=seconds, time_intervals=[]),
         progress=RouteProgress(miles_at=[0.0], seconds_at=[0.0, seconds]),
         assessed_checkpoints=[],

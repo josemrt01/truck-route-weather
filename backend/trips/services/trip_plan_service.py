@@ -12,7 +12,6 @@ from trips.logic.checkpoint_builder import build_checkpoints, build_route_progre
 from trips.logic.corridor_builder import build_corridor_points
 from trips.logic.risk_calculator import calculate_risk
 from trips.logic.risk_summary_builder import build_risk_summary
-from trips.logic.route_namer import name_routes
 from trips.logic.route_recommender import recommend_route
 from trips.logic.weather_lookup import get_weather_at, round_to_nearest_hour
 from trips.types import AssessedCheckpoint, Checkpoint, LonLat, Place, PlannedRoute, RiskLevel, Route
@@ -40,14 +39,9 @@ def create_trip_plan(
     # Fastest first, so the labels go A, B, C from fastest to slowest.
     routes.sort(key=_get_driving_seconds)
 
-    # Named in the same fastest-first order, so the fastest route gets first pick of road names.
-    route_names = name_routes(routes)
-
     planned_routes = []
     for index, route in enumerate(routes):
-        planned_routes.append(
-            _plan_route(ROUTE_LABELS[index], route_names[index], route, departure_utc, spacing_mi, weight_lb)
-        )
+        planned_routes.append(_plan_route(ROUTE_LABELS[index], route, departure_utc, spacing_mi, weight_lb))
 
     # The assessment asks for 3 options; say so when GraphHopper found fewer.
     notes = []
@@ -96,9 +90,7 @@ def _get_driving_seconds(route: Route) -> float:
     return route.time_s
 
 
-def _plan_route(
-    label: str, name: str, route: Route, departure_utc: datetime, spacing_mi: int, weight_lb: int
-) -> PlannedRoute:
+def _plan_route(label: str, route: Route, departure_utc: datetime, spacing_mi: int, weight_lb: int) -> PlannedRoute:
     # Measure the route, then place checkpoints along it with their arrival times.
     progress = build_route_progress(route.geometry, route.time_intervals)
     checkpoints = build_checkpoints(route.geometry, progress, spacing_mi, departure_utc)
@@ -108,7 +100,6 @@ def _plan_route(
 
     return PlannedRoute(
         label=label,
-        name=name,
         route=route,
         progress=progress,
         assessed_checkpoints=assessed_checkpoints,
@@ -131,7 +122,6 @@ def _serialize_route(planned_route: PlannedRoute, rank: int) -> dict:
     # Distance is our own measured total, so it matches the last checkpoint.
     return {
         "id": planned_route.label,
-        "name": planned_route.name,
         "rank": rank,
         "geometry": planned_route.route.geometry,
         "distance_mi": round(progress.miles_at[-1], MILE_DECIMALS),

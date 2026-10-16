@@ -10,12 +10,15 @@ type TripDrawerProps = {
   onStopChange: (stop: DrawerStop) => void
   // The one line shown at the low stop, e.g. "Option 1 · 3 h 27 min · Low risk".
   summaryText: string
+  // Shown just above the drawer's top edge (the compact forecast card), so it moves with the drawer;
+  // hidden at the full stop.
+  aboveContent?: ReactNode
   children: ReactNode
 }
 
 // The panel on narrow screens: a bottom drawer that is always open and rests at three stops. Non-modal, so the
 // map behind it keeps working.
-export function TripDrawer({ stop, onStopChange, summaryText, children }: TripDrawerProps) {
+export function TripDrawer({ stop, onStopChange, summaryText, aboveContent, children }: TripDrawerProps) {
   return (
     <Drawer.Root
       open
@@ -40,6 +43,10 @@ export function TripDrawer({ stop, onStopChange, summaryText, children }: TripDr
               // Full height comes from config, so the drawer and its full snap point always match.
               style={{ height: `${DRAWER_FULL_FRACTION * 100}dvh` }}
             >
+              {aboveContent && stop !== DrawerStop.FULL && (
+                <div className="absolute inset-x-3 bottom-full mb-3">{aboveContent}</div>
+              )}
+
               {/* A div, not a button: Base UI never starts a drag on buttons, and the handle must be draggable.
                   A tap moves to the next stop. */}
               <div

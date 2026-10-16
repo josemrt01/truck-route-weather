@@ -13,7 +13,7 @@ import { BackendStatus } from './types/backendStatus'
 import { DrawerStop } from './types/drawerStop'
 import { HeatmapStatus, type Heatmap } from './types/heatmap'
 import { PanelView } from './types/panelView'
-import type { TripPlan, TripSettings } from './types/tripPlan'
+import type { RoutePlan, TripPlan, TripSettings } from './types/tripPlan'
 
 // The heatmap and the plan it belongs to; a heatmap for an older plan that answers late is ignored.
 type HeatmapResult = {
@@ -110,6 +110,23 @@ function App() {
     )
   }
 
+  // The forecast card for the selected route; compact on the drawer, full over the map.
+  function renderForecastSlider(isCompact: boolean, plan: TripPlan, route: RoutePlan) {
+    return (
+      <ForecastSlider
+        isCompact={isCompact}
+        hour={forecastHour}
+        onHourChange={setForecastHour}
+        onUse={() => setIsTruckVisible(true)}
+        heatmap={currentHeatmap?.heatmap ?? null}
+        heatmapStatus={currentHeatmap?.status ?? null}
+        routeName={getRouteOptionName(route)}
+        departureUtc={plan.departure_utc}
+        arrivalUtc={route.arrival_utc}
+      />
+    )
+  }
+
   return (
     // The map fills the screen in both layouts; the panel is a left sidebar from 1024px up, a bottom drawer below.
     <main className="relative h-dvh overflow-hidden">
@@ -124,18 +141,13 @@ function App() {
           forecastHour={forecastHour}
           isTruckVisible={isTruckVisible}
         />
-        {/* Narrow screens get the compact card on the drawer instead (card 9.4). */}
         {isWideScreen && tripPlan && selectedRoute && (
-          <ForecastSlider
-            hour={forecastHour}
-            onHourChange={setForecastHour}
-            onUse={() => setIsTruckVisible(true)}
-            heatmap={currentHeatmap?.heatmap ?? null}
-            heatmapStatus={currentHeatmap?.status ?? null}
-            routeName={getRouteOptionName(selectedRoute)}
-            departureUtc={tripPlan.departure_utc}
-            arrivalUtc={selectedRoute.arrival_utc}
-          />
+          // Centered over the map, clear of the side panel (28rem) and high enough to leave MapLibre's credits visible.
+          <div className="pointer-events-none absolute right-6 bottom-10 left-[29.5rem] flex justify-center">
+            <div className="pointer-events-auto w-full max-w-2xl">
+              {renderForecastSlider(false, tripPlan, selectedRoute)}
+            </div>
+          </div>
         )}
       </div>
 
@@ -145,7 +157,12 @@ function App() {
           {renderPanelContent('div')}
         </aside>
       ) : (
-        <TripDrawer stop={drawerStop} onStopChange={setDrawerStop} summaryText={getDrawerSummaryText(selectedRoute)}>
+        <TripDrawer
+          stop={drawerStop}
+          onStopChange={setDrawerStop}
+          summaryText={getDrawerSummaryText(selectedRoute)}
+          aboveContent={tripPlan && selectedRoute ? renderForecastSlider(true, tripPlan, selectedRoute) : null}
+        >
           {renderPanelContent(Drawer.Content)}
         </TripDrawer>
       )}

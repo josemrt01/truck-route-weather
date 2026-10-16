@@ -1,7 +1,8 @@
 import { CloudSunIcon, PauseIcon, PlayIcon, TruckIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { PRIMARY_BUTTON_CLASS_NAME } from '../config/buttonStyles'
 import { getTripHourRange, type TripHourRange } from '../lib/dateTime'
-import { formatForecastHourLabel, formatHourOffset } from '../lib/formatters'
+import { formatEta, formatForecastTime, formatHourMark, formatHoursFromNow } from '../lib/formatters'
 import { HeatmapStatus, type Heatmap } from '../types/heatmap'
 import { RiskLegend } from './RiskLegend'
 
@@ -78,13 +79,25 @@ export function ForecastSlider({
     // Centered over the map, clear of the side panel (28rem) and high enough to leave MapLibre's credits visible.
     <div className="pointer-events-none absolute inset-x-3 bottom-10 flex justify-center md:right-6 md:left-[29.5rem]">
       <div className="pointer-events-auto flex w-full max-w-2xl flex-col gap-3 rounded-2xl bg-surface p-4 text-base shadow-floating-panel">
-        <div className="flex items-center justify-between gap-3">
-          <span className="flex items-center gap-2 font-semibold">
-            <CloudSunIcon className="size-5 text-primary" aria-hidden="true" />
-            Weather forecast
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex flex-col">
+            <span className="flex items-center gap-2 font-semibold">
+              <CloudSunIcon className="size-5 text-primary" aria-hidden="true" />
+              Weather forecast
+            </span>
+            <span className="text-sm text-muted-foreground">Drag or press play to see the weather hour by hour.</span>
           </span>
-          {/* The time the map shows, e.g. "+6h · Thu 2:00 PM", or why there is nothing to show. */}
-          <span className="font-semibold whitespace-nowrap">{getStatusLabel(heatmap, heatmapStatus, hour)}</span>
+          {/* The time the map shows, e.g. "Fri 2:00 AM · in 6 hours", or why there is nothing to show yet. */}
+          {heatmap ? (
+            <span className="text-right whitespace-nowrap">
+              <span className="font-semibold">{formatForecastTime(heatmap.start_hour_utc, hour)}</span>
+              <span className="text-muted-foreground"> · {formatHoursFromNow(hour)}</span>
+            </span>
+          ) : (
+            <span className="font-semibold whitespace-nowrap">
+              {heatmapStatus === HeatmapStatus.FAILED ? 'Weather map unavailable' : 'Loading weather…'}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -93,7 +106,8 @@ export function ForecastSlider({
             onClick={handlePlayClick}
             disabled={isDisabled}
             aria-label={isPlaying ? 'Pause' : 'Play'}
-            className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-surface disabled:cursor-default disabled:opacity-50"
+            // "rounded-full!" wins over the shared style's rounded-lg, so this button stays a circle.
+            className={`flex size-10 shrink-0 items-center justify-center rounded-full! ${PRIMARY_BUTTON_CLASS_NAME}`}
           >
             {isPlaying ? <PauseIcon className="size-5" /> : <PlayIcon className="ml-0.5 size-5" />}
           </button>
@@ -126,18 +140,22 @@ export function ForecastSlider({
                 />
               </div>
             )}
-            <div className="flex justify-between text-sm text-muted-foreground" aria-hidden="true">
-              {HOUR_MARKS.map((hourMark) => (
-                <span key={hourMark}>{hourMark === 0 ? 'Now' : `+${hourMark}h`}</span>
-              ))}
-            </div>
+            {heatmap && (
+              <div className="flex justify-between text-sm text-muted-foreground" aria-hidden="true">
+                {HOUR_MARKS.map((hourMark) => (
+                  <span key={hourMark}>{formatHourMark(heatmap.start_hour_utc, hourMark)}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {heatmap && (
           <span className="flex items-center gap-2">
             <TruckIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
-            {getTripLabel(routeName, tripHourRange, lastHour)}
+            {/* A sample of the blue bar under the slider, so it's clear the bar is the trip. */}
+            {tripHourRange && <span className="h-1.5 w-5 shrink-0 rounded-full bg-primary" aria-hidden="true" />}
+            {getTripLabel(routeName, tripHourRange, departureUtc, arrivalUtc, lastHour)}
           </span>
         )}
 
@@ -150,23 +168,18 @@ export function ForecastSlider({
   )
 }
 
-// What the label next to the slider says: the time shown, or why there is nothing to show.
-function getStatusLabel(heatmap: Heatmap | null, heatmapStatus: HeatmapStatus | null, hour: number): string {
-  if (heatmapStatus === HeatmapStatus.FAILED) {
-    return 'Weather map unavailable'
-  }
-  if (heatmap === null) {
-    return 'Loading weather…'
-  }
-
-  return formatForecastHourLabel(heatmap.start_hour_utc, hour)
-}
-
-// Text under the slider saying when the selected route's truck is on the road, e.g. "Option 1 on the road: +0h → +3.5h".
-function getTripLabel(routeName: string, tripHourRange: TripHourRange | null, lastHour: number): string {
+// Text next to the truck: when the selected route's trip runs, in local days and times,
+// e.g. "Your trip on Option 1: Thu 8:54 PM → Fri 12:30 PM".
+function getTripLabel(
+  routeName: string,
+  tripHourRange: TripHourRange | null,
+  departureUtc: string,
+  arrivalUtc: string,
+  lastHour: number,
+): string {
   if (tripHourRange === null) {
-    return `${routeName} starts after +${lastHour}h`
+    return `Your trip on ${routeName} starts after this ${lastHour}-hour forecast`
   }
 
-  return `${routeName} on the road: ${formatHourOffset(tripHourRange.startHour)} → ${formatHourOffset(tripHourRange.endHour)}`
+  return `Your trip on ${routeName}: ${formatEta(departureUtc)} → ${formatEta(arrivalUtc)}`
 }

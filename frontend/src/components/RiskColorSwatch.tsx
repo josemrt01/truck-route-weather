@@ -5,7 +5,7 @@ type RiskColorSwatchProps = {
   level: RiskLevel
 }
 
-// A small square in a risk level's color; used by RiskLegend and SegmentDetails.
+// A small square in a risk level's color; used by RiskLegend.
 export function RiskColorSwatch({ level }: RiskColorSwatchProps) {
   return (
     // The color comes from config at runtime, so it's an inline style instead of a Tailwind class.

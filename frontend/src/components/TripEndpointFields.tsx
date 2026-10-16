@@ -15,7 +15,7 @@ type TripEndpointFieldsProps = {
   onSwap: () => void
 }
 
-// Origin and destination stacked like Google Maps: a circle and a pin joined by a dotted line on the left,
+// Origin and destination stacked: a circle and a pin joined by a dotted line on the left,
 // a swap button on the right.
 //
 // A grid with one row per piece (label, input, error) keeps each icon in the same row as its input,

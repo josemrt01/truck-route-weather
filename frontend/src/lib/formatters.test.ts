@@ -3,8 +3,9 @@ import {
   formatDistance,
   formatDuration,
   formatEta,
-  formatForecastHourLabel,
-  formatHourOffset,
+  formatForecastTime,
+  formatHourMark,
+  formatHoursFromNow,
   formatPrecipitationRate,
   formatSpeed,
   formatWeight,
@@ -55,29 +56,38 @@ describe('formatPrecipitationRate', () => {
 })
 
 // Tests run in America/Chicago (UTC-5 in October), so 13:00 UTC is 8:00 AM local.
-describe('formatForecastHourLabel', () => {
-  it('shows hour 0 as now', () => {
-    expect(formatForecastHourLabel('2026-10-13T13:00:00Z', 0)).toBe('+0h · Tue 8:00 AM')
-  })
-
-  it('adds the hours to the start hour', () => {
-    expect(formatForecastHourLabel('2026-10-13T13:00:00Z', 6)).toBe('+6h · Tue 2:00 PM')
+describe('formatForecastTime', () => {
+  it('adds the hours to the start hour and shows the local day and time', () => {
+    expect(formatForecastTime('2026-10-13T13:00:00Z', 6)).toBe('Tue 2:00 PM')
   })
 
   it('uses the local day when UTC has already moved to the next day', () => {
     // 13:00 UTC + 15 h = 04:00 UTC on Wednesday, still 11:00 PM on Tuesday in Chicago.
-    expect(formatForecastHourLabel('2026-10-13T13:00:00Z', 15)).toBe('+15h · Tue 11:00 PM')
+    expect(formatForecastTime('2026-10-13T13:00:00Z', 15)).toBe('Tue 11:00 PM')
   })
 })
 
-describe('formatHourOffset', () => {
-  it('keeps one decimal', () => {
-    expect(formatHourOffset(3.4567)).toBe('+3.5h')
+describe('formatHoursFromNow', () => {
+  it('says now for hour 0', () => {
+    expect(formatHoursFromNow(0)).toBe('now')
   })
 
-  it('drops a trailing .0', () => {
-    expect(formatHourOffset(0)).toBe('+0h')
-    expect(formatHourOffset(15)).toBe('+15h')
+  it('uses the singular for one hour', () => {
+    expect(formatHoursFromNow(1)).toBe('in 1 hour')
+  })
+
+  it('uses the plural for more hours', () => {
+    expect(formatHoursFromNow(6)).toBe('in 6 hours')
+  })
+})
+
+describe('formatHourMark', () => {
+  it('shows hour 0 as Now', () => {
+    expect(formatHourMark('2026-10-13T13:00:00Z', 0)).toBe('Now')
+  })
+
+  it('shows other marks as a short day and hour', () => {
+    expect(formatHourMark('2026-10-13T13:00:00Z', 12)).toBe('Tue 8 PM')
   })
 })
 

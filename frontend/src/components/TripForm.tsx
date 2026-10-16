@@ -2,7 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { getTripPlan } from '../api/tripPlanApi'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CHECKPOINT_SPACING_OPTIONS_MI } from '../config/checkpointConfig'
-import { FORM_CONTROL_CLASS_NAME, TOGGLE_OPTION_CLASS_NAME } from '../config/formStyles'
+import {
+  PRIMARY_BUTTON_CLASS_NAME,
+  SECONDARY_BUTTON_CLASS_NAME,
+  SEGMENTED_GROUP_CLASS_NAME,
+  SEGMENTED_OPTION_CLASS_NAME,
+} from '../config/buttonStyles'
+import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
 import { buildDepartureIso, getFirstDepartureSelection } from '../lib/departureOptions'
 import { getRequiredFieldErrors } from '../lib/tripFormValidation'
 import { buildTripPlanRequest } from '../lib/tripPlanRequest'
@@ -240,18 +246,19 @@ export function TripForm({ onTripPlanned, onClear }: TripFormProps) {
             aria-label="Checkpoint every"
             aria-required
             variant="outline"
+            spacing={0}
             value={spacingMi === null ? [] : [String(spacingMi)]}
             onValueChange={handleSpacingChange}
-            className="w-full"
+            className={SEGMENTED_GROUP_CLASS_NAME}
           >
             {CHECKPOINT_SPACING_OPTIONS_MI.map((spacingOption) => (
               <ToggleGroupItem
                 key={spacingOption}
                 value={String(spacingOption)}
                 aria-invalid={Boolean(getFieldError(TripPlanField.SPACING_MI))}
-                className={TOGGLE_OPTION_CLASS_NAME}
+                className={SEGMENTED_OPTION_CLASS_NAME}
               >
-                {spacingOption} mi
+                {spacingOption} miles
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -277,14 +284,14 @@ export function TripForm({ onTripPlanned, onClear }: TripFormProps) {
         <div className="mt-2 flex gap-2">
           <button
             type="submit"
-            className="flex-1 cursor-pointer rounded-md bg-primary p-2.5 font-semibold text-surface disabled:cursor-wait disabled:opacity-60"
+            className={`flex-1 p-2.5 ${PRIMARY_BUTTON_CLASS_NAME}`}
           >
             {isPlanning ? 'Planning…' : 'Plan route'}
           </button>
           <button
             type="button"
             onClick={onClear}
-            className="cursor-pointer rounded-md border border-border px-4 font-semibold hover:bg-muted disabled:cursor-wait disabled:opacity-60"
+            className={`px-4 ${SECONDARY_BUTTON_CLASS_NAME}`}
           >
             Clear
           </button>

@@ -10,7 +10,8 @@ export const RISK_LEVEL_COLORS: Record<RiskLevel, string> = {
   [RiskLevel.NO_TRAVEL]: '#6e2b8f',
 }
 
-// Text color that stays readable on each level's color (dark on the light yellow); used by the risk pill on route cards.
+// Text color that stays readable on each level's color (dark on the light yellow);
+// used by the risk pills on route cards and the route popup.
 export const RISK_LEVEL_TEXT_COLORS: Record<RiskLevel, string> = {
   [RiskLevel.LOW]: '#ffffff',
   [RiskLevel.MODERATE]: '#1f2328',

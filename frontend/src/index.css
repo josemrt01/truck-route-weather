@@ -11,6 +11,9 @@
 /* Theme tokens; Tailwind turns each into classes (e.g. --color-error gives text-error and border-error).
    Tokens that only shadcn components use point at our own colors, so each color is written once. */
 @theme {
+  /* The device's own system font, then common fallbacks; Tailwind uses it for all text. */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
   /* Main text color; used as text-foreground across the app. */
   --color-foreground: #1f2328;
   /* Secondary text (status line, trip summary, list messages); used as text-muted-foreground. */
@@ -19,14 +22,29 @@
   --color-muted: #f6f8fa;
   /* Background of the page and floating panels; used as bg-surface. */
   --color-surface: #ffffff;
+  /* Light gray behind the side panel's content, so the white cards and inputs stand out; used as bg-panel. */
+  --color-panel: #eef0f3;
+  /* Silver toolbar: gradient top, gradient bottom and the darker line under it; used by PanelToolbar. */
+  --color-toolbar-top: #f4f5f7;
+  --color-toolbar-bottom: #c9ced6;
+  --color-toolbar-edge: #9aa3ae;
   /* Input borders; used as border-border in forms and the suggestion list. */
   --color-border: #d1d9e0;
   /* Main action color; used as bg-primary by the Plan route button. */
   --color-primary: #0969da;
+  /* Button blue: gradient top, gradient bottom and darker edge; used in buttonStyles. */
+  --color-button-blue-top: #6a9de8;
+  --color-button-blue-bottom: #2d63c8;
+  --color-button-blue-edge: #234f9f;
+  /* Bottom of the light gray button gradient, white at the top; used as to-surface-sunken in buttonStyles. */
+  --color-surface-sunken: #e9edf1;
   /* Error text and invalid input borders; used as text-error and border-error. */
   --color-error: #d1242f;
   /* Green text for good news ("Recommended"); used as text-success on route cards. */
   --color-success: #1a7f37;
+  /* Green for the "Recommended" band: gradient top and bottom; used in RouteCard. */
+  --color-recommended-top: #7fc35d;
+  --color-recommended-bottom: #3d8c2a;
   /* Soft green background behind success text; used as bg-success-soft on route cards. */
   --color-success-soft: #dafbe1;
   /* Icon colors on the route cards, so each fact is easy to spot; used as text-distance and text-arrival. */
@@ -49,6 +67,26 @@
   --shadow-floating-panel: 0 1px 4px rgba(0, 0, 0, 0.25);
   /* Soft shadow that lifts map pins off the route line; used as drop-shadow-map-pin in RouteEndpointMarker. */
   --drop-shadow-map-pin: 0 2px 3px rgba(0, 0, 0, 0.35);
+
+  /* Depth: raised buttons, pressed (sunken) buttons, carved inputs, lifted cards.
+     Used through buttonStyles, formStyles and RouteCard. */
+  /* Small shadow under a raised button or segmented control; used as shadow-raised. */
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.14), 0 1px 1px rgba(0, 0, 0, 0.06);
+  /* Shadow under a route card; used as shadow-card. */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+  /* Bigger shadow under the selected route card, so it looks lifted; used as shadow-card-lifted. */
+  --shadow-card-lifted: 0 4px 10px rgba(9, 105, 218, 0.18), 0 10px 24px rgba(0, 0, 0, 0.1);
+  /* Thin light line along a button's top inside edge, like glass catching light; used as inset-shadow-highlight. */
+  --inset-shadow-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  /* Shadow inside a pressed button, so it looks pushed in; used as inset-shadow-pressed. */
+  --inset-shadow-pressed: inset 0 2px 3px rgba(0, 0, 0, 0.25);
+  /* Shadow inside the top of an input, so it looks carved into the panel; used as inset-shadow-carved. */
+  --inset-shadow-carved: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  /* White line under dark text, so it looks pressed into the gray panel ("letterpress");
+     used as text-shadow-letterpress on field labels and the toolbar title. */
+  --text-shadow-letterpress: 0 1px 0 rgba(255, 255, 255, 0.8);
+  /* Faint dark line above white text on colored buttons ("embossed" text); used as text-shadow-embossed. */
+  --text-shadow-embossed: 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
 @layer base {
@@ -62,4 +100,27 @@
   * {
     @apply border-border outline-ring/50;
   }
+}
+
+/* MapLibre draws the route popup itself, so plain CSS styles it to match the route cards. */
+.maplibregl-popup-content {
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-card-lifted);
+  font: inherit;
+}
+
+/* MapLibre's close "×" is tiny by default; bigger, rounder and easier to hit. */
+.maplibregl-popup-close-button {
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 20px;
+  color: var(--color-muted-foreground);
+}
+
+.maplibregl-popup-close-button:hover {
+  background: var(--color-muted);
 }

@@ -34,17 +34,26 @@ export function formatPrecipitationRate(inchesPerHour: number): string {
   return `${inchesPerHour.toFixed(2)} in/hr`
 }
 
-// Hours from now and the local time of that forecast hour, e.g. "+6h · Tue 2:00 PM".
-export function formatForecastHourLabel(startHourUtc: string, hour: number): string {
-  const forecastTime = getForecastHourTime(startHourUtc, hour)
-  return `+${hour}h · ${formatEta(forecastTime.toISOString())}`
+// Local day and time of a forecast hour, e.g. "Tue 2:00 PM"; the forecast card's main time.
+export function formatForecastTime(startHourUtc: string, hour: number): string {
+  return formatEta(getForecastHourTime(startHourUtc, hour).toISOString())
 }
 
-// Hours from the slider's start with at most one decimal, e.g. "+3.5h" or "+0h".
-export function formatHourOffset(hours: number): string {
-  // Multiply, round, divide: keeps one decimal and drops ".0" (3.0 shows as 3).
-  const roundedHours = Math.round(hours * 10) / 10
-  return `+${roundedHours}h`
+// How far a forecast hour is from now in plain words: "now", "in 1 hour", "in 6 hours".
+export function formatHoursFromNow(hour: number): string {
+  if (hour === 0) return 'now'
+  if (hour === 1) return 'in 1 hour'
+
+  return `in ${hour} hours`
+}
+
+// Short day and hour for the marks under the forecast slider, e.g. "Tue 8 PM"; hour 0 is "Now".
+const HOUR_MARK_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'short', hour: 'numeric' })
+
+export function formatHourMark(startHourUtc: string, hour: number): string {
+  if (hour === 0) return 'Now'
+
+  return HOUR_MARK_FORMAT.format(getForecastHourTime(startHourUtc, hour))
 }
 
 // Whole pounds with thousands separators, e.g. "45,000 lb".

@@ -13,7 +13,7 @@ type RouteEndpointMarkerProps = {
   endpoint: RouteEndpoint
 }
 
-// The ends of the route like Google and Apple Maps: a white dot with a dark ring at the start,
+// The ends of the route: a white dot with a dark ring at the start,
 // a red pin at the destination; both with a soft shadow and no letters.
 export function RouteEndpointMarker({ place, endpoint }: RouteEndpointMarkerProps) {
   const name = ENDPOINT_NAMES[endpoint]

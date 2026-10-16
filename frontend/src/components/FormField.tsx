@@ -34,7 +34,7 @@ type FieldLabelProps = {
 // A field's label with the red * for required fields; used by FormField and TripEndpointFields.
 export function FieldLabel({ id, label, isRequired, className = '' }: FieldLabelProps) {
   return (
-    <label htmlFor={id} className={`font-semibold ${className}`}>
+    <label htmlFor={id} className={`font-semibold text-shadow-letterpress ${className}`}>
       {label}
       {/* Hidden from screen readers, which hear "required" from aria-required instead of "star". */}
       {isRequired && (

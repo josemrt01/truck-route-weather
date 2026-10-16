@@ -5,7 +5,11 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { TOGGLE_OPTION_CLASS_NAME } from '../config/formStyles'
+import {
+  SECONDARY_BUTTON_CLASS_NAME,
+  SEGMENTED_GROUP_CLASS_NAME,
+  SEGMENTED_OPTION_CLASS_NAME,
+} from '../config/buttonStyles'
 import {
   areInSameMonth,
   getAvailableTime,
@@ -84,14 +88,15 @@ export function DepartureInput({ id, choice, isInvalid, onChoiceChange }: Depart
         id={id}
         aria-label="Departure"
         variant="outline"
+        spacing={0}
         value={[choice.mode]}
         onValueChange={handleModeChange}
-        className="w-full"
+        className={SEGMENTED_GROUP_CLASS_NAME}
       >
-        <ToggleGroupItem value={DepartureMode.NOW} className={TOGGLE_OPTION_CLASS_NAME}>
+        <ToggleGroupItem value={DepartureMode.NOW} className={SEGMENTED_OPTION_CLASS_NAME}>
           Leave now
         </ToggleGroupItem>
-        <ToggleGroupItem value={DepartureMode.AT} className={TOGGLE_OPTION_CLASS_NAME}>
+        <ToggleGroupItem value={DepartureMode.AT} className={SEGMENTED_OPTION_CLASS_NAME}>
           Depart at
         </ToggleGroupItem>
       </ToggleGroup>
@@ -100,7 +105,7 @@ export function DepartureInput({ id, choice, isInvalid, onChoiceChange }: Depart
         <div className="flex gap-2">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger
-              render={<Button variant="outline" aria-label="Departure day" className="h-10 flex-1 justify-between text-base" />}
+              render={<Button variant="outline" aria-label="Departure day" className={`h-10 flex-1 justify-between px-3 text-base ${SECONDARY_BUTTON_CLASS_NAME}`} />}
             >
               {selectedDayLabel}
               <CalendarIcon className="text-muted-foreground" />
@@ -126,7 +131,7 @@ export function DepartureInput({ id, choice, isInvalid, onChoiceChange }: Depart
           </Popover>
 
           <Select items={times} value={choice.timeValue} onValueChange={handleTimeChange}>
-            <SelectTrigger aria-label="Departure time" aria-invalid={isInvalid} className="flex-1 text-base data-[size=default]:h-10">
+            <SelectTrigger aria-label="Departure time" aria-invalid={isInvalid} className={`flex-1 text-base data-[size=default]:h-10 ${SECONDARY_BUTTON_CLASS_NAME}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

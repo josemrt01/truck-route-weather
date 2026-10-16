@@ -34,11 +34,12 @@ export function RouteCard({ route, isRecommended, isFastest, reason, isSelected,
 
   // Selected: thick blue ring on a soft blue background. Otherwise the recommended card keeps a thin green ring,
   // so it never looks selected.
-  let frameClassName = 'ring-1 ring-border hover:bg-muted'
+  // Every card casts a shadow; the selected one casts a bigger one, so it looks lifted off the panel.
+  let frameClassName = 'bg-surface shadow-card ring-1 ring-border hover:bg-muted'
   if (isSelected) {
-    frameClassName = 'bg-accent ring-2 ring-primary'
+    frameClassName = 'bg-accent shadow-card-lifted ring-2 ring-primary'
   } else if (isRecommended) {
-    frameClassName = 'ring-1 ring-success hover:bg-muted'
+    frameClassName = 'bg-surface shadow-card ring-1 ring-success hover:bg-muted'
   }
 
   return (
@@ -50,7 +51,7 @@ export function RouteCard({ route, isRecommended, isFastest, reason, isSelected,
       className={`flex cursor-pointer flex-col overflow-hidden rounded-xl text-left ${frameClassName}`}
     >
       {isRecommended && (
-        <span className="flex items-center gap-1.5 bg-success px-3 py-1.5 text-sm font-semibold text-surface">
+        <span className="flex items-center gap-1.5 bg-linear-to-b from-recommended-top to-recommended-bottom px-3 py-1.5 text-sm font-semibold text-surface inset-shadow-highlight text-shadow-embossed">
           <CircleCheckIcon className="size-4" aria-hidden="true" />
           Recommended
         </span>
@@ -58,7 +59,8 @@ export function RouteCard({ route, isRecommended, isFastest, reason, isSelected,
 
       <span className="flex flex-col gap-3 p-3">
         <span className="flex items-center justify-between gap-2">
-          <strong className="text-lg">{getRouteOptionName(route)}</strong>
+          {/* Bold only on the recommended card; the other options stay lighter so Option 1 leads. */}
+          <span className={`text-lg ${isRecommended ? 'font-bold' : 'font-medium'}`}>{getRouteOptionName(route)}</span>
           {isFastest && (
             <span className="flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-sm font-semibold text-primary">
               <ZapIcon className="size-3.5" aria-hidden="true" />

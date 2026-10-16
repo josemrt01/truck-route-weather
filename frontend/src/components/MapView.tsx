@@ -273,6 +273,8 @@ export function MapView({ tripPlan, selectedRouteId, heatmap, forecastHour, isTr
           latitude={visibleSegment.lat}
           anchor="bottom"
           offset={SEGMENT_POPUP_OFFSET}
+          // Room for the 256px content plus padding; MapLibre's default (240px) would squeeze it.
+          maxWidth="320px"
           // Our own onClick already closes it on empty-map clicks.
           closeOnClick={false}
           onClose={() => setSelectedSegment(null)}

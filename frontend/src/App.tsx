@@ -1,9 +1,11 @@
-import { ArrowLeftIcon } from 'lucide-react'
+import { ChevronLeftIcon, PencilIcon, XIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { SECONDARY_BUTTON_CLASS_NAME } from './config/buttonStyles'
 import { getBackendStatus } from './api/healthApi'
 import { getHeatmap } from './api/heatmapApi'
 import { ForecastSlider } from './components/ForecastSlider'
 import { MapView } from './components/MapView'
+import { PanelToolbar } from './components/PanelToolbar'
 import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
 import { TripSummary } from './components/TripSummary'
@@ -77,7 +79,7 @@ function App() {
 
   return (
     // Phones: panel on top (at most half the screen, scrolling), map below.
-    // From md (768px) up: map fills the screen, panel is a full-height sidebar on the left edge, like Google Maps.
+    // From md (768px) up: map fills the screen, panel is a full-height sidebar on the left edge.
     <main className="flex h-screen flex-col md:relative md:block">
       <div className="relative min-h-0 flex-1 md:absolute md:inset-0">
         <MapView
@@ -102,41 +104,75 @@ function App() {
       </div>
 
       {/* md:w-[28rem] (448px) must match the left value of ROUTE_FIT_PADDING in mapConfig.ts. */}
-      <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-base md:absolute md:top-0 md:left-0 md:h-screen md:max-h-none md:w-[28rem] md:p-6 md:shadow-floating-panel">
-        <h1 className="text-xl font-bold">Truck Route Weather</h1>
-        {/* Silent while the backend is fine; only a problem is worth the user's attention. */}
-        {backendStatus === BackendStatus.UNREACHABLE && (
-          <p className="text-error" role="alert">
-            Can't reach the server. Try again in a minute.
-          </p>
+      <aside className="flex max-h-[50vh] flex-col bg-panel text-base md:absolute md:top-0 md:left-0 md:h-screen md:max-h-none md:w-[28rem] md:shadow-floating-panel">
+        {/* No visible app title; screen readers still get the page's name. */}
+        <h1 className="sr-only">Truck Route Weather</h1>
+
+        {/* The toolbar stays put while the content under it scrolls. */}
+        {panelView === PanelView.FORM ? (
+          <PanelToolbar
+            title="Plan a trip"
+            leftActions={
+              tripPlan && (
+                <button
+                  type="button"
+                  onClick={() => setPanelView(PanelView.RESULTS)}
+                  className={`flex items-center gap-0.5 py-1.5 pr-3 pl-2 ${SECONDARY_BUTTON_CLASS_NAME}`}
+                >
+                  <ChevronLeftIcon className="size-4" />
+                  Routes
+                </button>
+              )
+            }
+          />
+        ) : (
+          <PanelToolbar
+            title="Routes"
+            rightActions={
+              <>
+                <button
+                  type="button"
+                  onClick={() => setPanelView(PanelView.FORM)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 ${SECONDARY_BUTTON_CLASS_NAME}`}
+                >
+                  <PencilIcon className="size-3.5" />
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearTrip}
+                  aria-label="Clear trip"
+                  className={`px-3 py-1.5 ${SECONDARY_BUTTON_CLASS_NAME}`}
+                >
+                  <XIcon className="size-4" />
+                </button>
+              </>
+            }
+          />
         )}
 
-        {/* The form stays in the page while hidden, so "Edit" brings it back with every value still filled in. */}
-        <div className={panelView === PanelView.FORM ? 'flex flex-col gap-3' : 'hidden'}>
-          {tripPlan && (
-            <button
-              type="button"
-              onClick={() => setPanelView(PanelView.RESULTS)}
-              className="flex cursor-pointer items-center gap-1.5 self-start rounded-lg px-3 py-2 font-semibold text-primary hover:bg-muted"
-            >
-              <ArrowLeftIcon className="size-4" />
-              Back to routes
-            </button>
+        {/* The trip the user entered sits outside the scrolling area, edge to edge under the toolbar. */}
+        {panelView === PanelView.RESULTS && tripPlan && tripSettings && (
+          <TripSummary tripPlan={tripPlan} tripSettings={tripSettings} />
+        )}
+
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 md:p-6">
+          {/* Silent while the backend is fine; only a problem is worth the user's attention. */}
+          {backendStatus === BackendStatus.UNREACHABLE && (
+            <p className="text-error" role="alert">
+              Can't reach the server. Try again in a minute.
+            </p>
           )}
-          <TripForm key={formResetCount} onTripPlanned={handleTripPlanned} onClear={handleClearTrip} />
-        </div>
 
-        {panelView === PanelView.RESULTS && tripPlan && tripSettings && selectedRouteId && (
-          <>
-            <TripSummary
-              tripPlan={tripPlan}
-              tripSettings={tripSettings}
-              onEdit={() => setPanelView(PanelView.FORM)}
-              onClear={handleClearTrip}
-            />
+          {/* The form stays in the page while hidden, so "Edit" brings it back with every value still filled in. */}
+          <div className={panelView === PanelView.FORM ? 'flex flex-col gap-3' : 'hidden'}>
+            <TripForm key={formResetCount} onTripPlanned={handleTripPlanned} onClear={handleClearTrip} />
+          </div>
+
+          {panelView === PanelView.RESULTS && tripPlan && selectedRouteId && (
             <RouteCards tripPlan={tripPlan} selectedRouteId={selectedRouteId} onSelectRoute={setSelectedRouteId} />
-          </>
-        )}
+          )}
+        </div>
       </aside>
     </main>
   )

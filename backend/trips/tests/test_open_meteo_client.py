@@ -3,10 +3,14 @@ import requests
 import responses
 from django.conf import settings
 
-from trips.clients.open_meteo_client import get_hourly_forecasts
+from trips.clients.open_meteo_client import RATE_LIMIT_RETRY_SECONDS, get_hourly_forecasts
 from trips.exceptions import WeatherServiceError
 from trips.tests.test_data import DALLAS_POINT, DEPARTURE_UTC, HOUSTON_POINT
 from trips.types import HourlyForecast
+
+
+# Body Open-Meteo sends with status 429; the reason names the limit that was hit.
+RATE_LIMIT_BODY = {"error": True, "reason": "Daily API request limit exceeded. Please try again tomorrow."}
 
 
 def build_location(gusts=(10.0, 20.0), wind=(5.0, 8.0), rain=(0.0, 0.1), showers=(0.0, 0.05), snow=(0.0, 0.0)):
@@ -106,6 +110,37 @@ def test_get_hourly_forecasts_raises_weather_service_error_on_server_failure():
 
     with pytest.raises(WeatherServiceError, match="status 500"):
         get_forecasts([DALLAS_POINT])
+
+    # Only a rate limit is worth retrying; a server error fails at once.
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_get_hourly_forecasts_retries_once_after_rate_limit(monkeypatch):
+    waits = []
+    monkeypatch.setattr("trips.clients.open_meteo_client.sleep", waits.append)
+    # responses answers registered replies in order: first the rate limit, then the forecast.
+    responses.get(f"{settings.OPEN_METEO_BASE_URL}/forecast", status=429, json=RATE_LIMIT_BODY)
+    responses.get(f"{settings.OPEN_METEO_BASE_URL}/forecast", json=build_location(gusts=(10.0, 20.0)))
+
+    forecasts = get_forecasts([DALLAS_POINT])
+
+    assert forecasts[0].wind_gust_mph == [10.0, 20.0]
+    assert len(responses.calls) == 2
+    assert waits == [RATE_LIMIT_RETRY_SECONDS]
+
+
+@responses.activate
+def test_get_hourly_forecasts_reports_open_meteo_reason_when_still_rate_limited(monkeypatch):
+    monkeypatch.setattr("trips.clients.open_meteo_client.sleep", lambda seconds: None)
+    responses.get(f"{settings.OPEN_METEO_BASE_URL}/forecast", status=429, json=RATE_LIMIT_BODY)
+    responses.get(f"{settings.OPEN_METEO_BASE_URL}/forecast", status=429, json=RATE_LIMIT_BODY)
+
+    # The reason tells which limit was hit (per minute, hour or day), so it goes into the log.
+    with pytest.raises(WeatherServiceError, match="status 429.*Daily API request limit exceeded"):
+        get_forecasts([DALLAS_POINT])
+
+    assert len(responses.calls) == 2
 
 
 @responses.activate

@@ -1,9 +1,11 @@
 """Client for the Open-Meteo hourly weather forecast API."""
 
 from datetime import UTC, datetime
+from time import sleep
 
 import requests
 from django.conf import settings
+from rest_framework import status
 
 from trips.constants import HTTP_TIMEOUT_SECONDS
 from trips.exceptions import WeatherServiceError
@@ -17,6 +19,12 @@ HOURLY_VARIABLES = "wind_gusts_10m,wind_speed_10m,rain,showers,snowfall"
 
 # Hour format Open-Meteo uses for start_hour and end_hour; used by get_hourly_forecasts.
 HOUR_FORMAT = "%Y-%m-%dT%H:00"
+
+# Seconds to wait before asking again after Open-Meteo's rate limit (status 429); used by _get_json.
+RATE_LIMIT_RETRY_SECONDS = 2
+
+# Characters of an error reply kept in the log message (enough for Open-Meteo's reason); used by _get_json.
+ERROR_BODY_LOG_LENGTH = 200
 
 # Decimal places kept when adding rain and showers (Open-Meteo's own precision in inches); used by _build_hourly_forecast.
 RAIN_DECIMALS = 3
@@ -88,16 +96,28 @@ def _replace_missing_with_zero(values: list[float | None]) -> list[float]:
 
 
 def _get_json(params: dict[str, str]) -> dict | list:
-    try:
-        response = requests.get(f"{settings.OPEN_METEO_BASE_URL}/forecast", params=params, timeout=HTTP_TIMEOUT_SECONDS)
-    except requests.RequestException as exc:
-        raise WeatherServiceError(f"Could not reach Open-Meteo ({type(exc).__name__}).") from exc
+    response = _send_request(params)
 
+    # Rate limited: the per-minute limit clears quickly, so wait a moment and ask once more.
+    if response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+        sleep(RATE_LIMIT_RETRY_SECONDS)
+        response = _send_request(params)
+
+    # Open-Meteo's reply says why (e.g. which rate limit was hit), so it goes into the message for the log.
     if not response.ok:
-        raise WeatherServiceError(f"Open-Meteo answered with status {response.status_code}.")
+        raise WeatherServiceError(
+            f"Open-Meteo answered with status {response.status_code}: {response.text[:ERROR_BODY_LOG_LENGTH]}"
+        )
 
     # Open-Meteo sometimes reports its own timeouts as status 200 with a plain-text body.
     try:
         return response.json()
     except ValueError:
         raise WeatherServiceError(f"Open-Meteo sent a response that isn't JSON: {response.text[:100]}") from None
+
+
+def _send_request(params: dict[str, str]) -> requests.Response:
+    try:
+        return requests.get(f"{settings.OPEN_METEO_BASE_URL}/forecast", params=params, timeout=HTTP_TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise WeatherServiceError(f"Could not reach Open-Meteo ({type(exc).__name__}).") from exc

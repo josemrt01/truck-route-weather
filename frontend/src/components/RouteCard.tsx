@@ -43,12 +43,12 @@ export function RouteCard({ route, isRecommended, reason, isSelected, onSelect }
       </span>
 
       {/* No Travel only when there is some; Severe and High always, since the ranking compares them. */}
-      <span className="text-muted">
+      <span className="text-muted-foreground">
         {miles.no_travel > 0 && `No Travel ${formatDistance(miles.no_travel)} · `}
         Severe {formatDistance(miles.severe)} · High {formatDistance(miles.high)}
       </span>
 
-      {isRecommended && <span className="text-muted">{reason}</span>}
+      {isRecommended && <span className="text-muted-foreground">{reason}</span>}
     </button>
   )
 }

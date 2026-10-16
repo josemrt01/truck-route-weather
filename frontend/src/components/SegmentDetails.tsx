@@ -29,7 +29,7 @@ export function SegmentDetails({ start, end }: SegmentDetailsProps) {
         {RISK_LEVEL_LABELS[worse.level]} · {RISK_CAUSE_LABELS[worse.cause]}
       </span>
 
-      <span className="text-muted">
+      <span className="text-muted-foreground">
         Mile {worse.mile}, forecast for {formatEta(worse.forecast_hour_utc)}
       </span>
       <span>

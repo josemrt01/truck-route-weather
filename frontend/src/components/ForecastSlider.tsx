@@ -106,7 +106,7 @@ export function ForecastSlider({
       </div>
 
       {heatmap && (
-        <span className="text-xs text-muted">
+        <span className="text-xs text-muted-foreground">
           {getTripLabel(routeId, tripHourRange, lastHour)}
         </span>
       )}

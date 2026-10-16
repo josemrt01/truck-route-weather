@@ -75,7 +75,7 @@ function App() {
 
       <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-sm md:absolute md:top-3 md:left-3 md:max-h-[calc(100vh-24px)] md:w-80 md:overflow-y-auto md:rounded-lg md:shadow-floating-panel">
         <h1 className="text-lg font-bold">Truck Route Weather</h1>
-        <span className="text-muted">Backend: {status}</span>
+        <span className="text-muted-foreground">Backend: {status}</span>
 
         <TripForm onTripPlanned={handleTripPlanned} />
 

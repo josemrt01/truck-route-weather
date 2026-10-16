@@ -1,29 +1,58 @@
 @import 'tailwindcss';
+/* Enter and exit animations (fade, zoom, slide) used by shadcn components. */
+@import 'tw-animate-css';
+/* shadcn's custom variants (data-open, data-checked, ...) and keyframes. */
+@import 'shadcn/tailwind.css';
 
-/* Theme tokens; Tailwind turns each into classes (e.g. --color-error gives text-error and border-error). */
+/* Turns on "dark:" classes only under a .dark parent; we never add one, so shadcn components stay light
+   even when the computer is in dark mode. */
+@custom-variant dark (&:is(.dark *));
+
+/* Theme tokens; Tailwind turns each into classes (e.g. --color-error gives text-error and border-error).
+   Tokens that only shadcn components use point at our own colors, so each color is written once. */
 @theme {
   /* Main text color; used as text-foreground across the app. */
   --color-foreground: #1f2328;
-  /* Secondary text (status line, trip summary); used as text-muted in App. */
-  --color-muted: #59636e;
+  /* Secondary text (status line, trip summary, list messages); used as text-muted-foreground. */
+  --color-muted-foreground: #59636e;
+  /* Soft gray background (hover on small buttons); used as bg-muted. */
+  --color-muted: #f6f8fa;
   /* Background of the page and floating panels; used as bg-surface. */
   --color-surface: #ffffff;
-  /* Input borders; used as border-border in PlaceField. */
+  /* Input borders; used as border-border in forms and the suggestion list. */
   --color-border: #d1d9e0;
   /* Main action color; used as bg-primary by the Plan route button. */
   --color-primary: #0969da;
   /* Error text and invalid input borders; used as text-error and border-error. */
   --color-error: #d1242f;
-  /* Soft shadow for panels floating over the map; used as shadow-floating-panel by the side panel. */
+  /* Highlighted suggestion row; used as bg-accent in PlaceSearchInput. */
+  --color-accent: #ddf4ff;
+
+  /* shadcn names for our colors; used by components in src/components/ui. */
+  --color-background: var(--color-surface);
+  --color-primary-foreground: var(--color-surface);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-foreground);
+  --color-accent-foreground: var(--color-foreground);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-primary);
+  --color-destructive: var(--color-error);
+
+  /* Soft shadow for panels floating over the map; used as shadow-floating-panel by the side panel and the suggestion list. */
   --shadow-floating-panel: 0 1px 4px rgba(0, 0, 0, 0.25);
   /* Shadow that lifts map pins off the route line; used as drop-shadow-map-pin in RouteEndpointMarker. */
   --drop-shadow-map-pin: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* Page-wide text and background colors. */
 @layer base {
+  /* Page-wide text and background colors. */
   body {
     color: var(--color-foreground);
     background: var(--color-surface);
+  }
+
+  /* shadcn's defaults: borders use our border color, focus outlines use the ring color. */
+  * {
+    @apply border-border outline-ring/50;
   }
 }

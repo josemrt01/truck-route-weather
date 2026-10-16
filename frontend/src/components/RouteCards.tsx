@@ -22,7 +22,7 @@ export function RouteCards({ tripPlan, selectedRouteId, onSelectRoute }: RouteCa
 
       {/* e.g. "Only 2 routes found between these places." */}
       {tripPlan.notes.map((note) => (
-        <p key={note} className="text-muted">
+        <p key={note} className="text-muted-foreground">
           {note}
         </p>
       ))}

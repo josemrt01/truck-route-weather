@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { DepartureMode } from '../types/departure'
 import {
+  areInSameMonth,
   buildDepartureIso,
   getAvailableTime,
+  getDateFromDayValue,
+  getDayValue,
   getDepartureDays,
   getDepartureTimes,
   getFirstDepartureSelection,
@@ -29,12 +32,12 @@ describe('getDepartureDays', () => {
     expect(days.map((day) => day.label)).toEqual([
       'Today',
       'Tomorrow',
-      'Sat 17',
-      'Sun 18',
-      'Mon 19',
-      'Tue 20',
-      'Wed 21',
-      'Thu 22',
+      'Sat, Oct 17',
+      'Sun, Oct 18',
+      'Mon, Oct 19',
+      'Tue, Oct 20',
+      'Wed, Oct 21',
+      'Thu, Oct 22',
     ])
   })
 
@@ -42,6 +45,27 @@ describe('getDepartureDays', () => {
     const days = getDepartureDays(new Date(2026, 9, 15, 23, 50))
 
     expect(days[0]).toEqual({ value: '2026-10-16', label: 'Tomorrow' })
+  })
+})
+
+describe('getDayValue and getDateFromDayValue', () => {
+  it('turn a local date into "YYYY-MM-DD" and back to local midnight', () => {
+    expect(getDayValue(now)).toBe('2026-10-15')
+    expect(getDateFromDayValue('2026-10-15')).toEqual(new Date(2026, 9, 15))
+  })
+})
+
+describe('areInSameMonth', () => {
+  it('is true for two days of the same month', () => {
+    expect(areInSameMonth('2026-10-15', '2026-10-22')).toBe(true)
+  })
+
+  it('is false when the days cross into the next month', () => {
+    expect(areInSameMonth('2026-10-28', '2026-11-04')).toBe(false)
+  })
+
+  it('is false for the same month of different years', () => {
+    expect(areInSameMonth('2026-12-15', '2027-12-15')).toBe(false)
   })
 })
 

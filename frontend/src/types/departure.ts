@@ -20,3 +20,8 @@ export type DepartureSelection = {
   dayValue: string
   timeValue: string
 }
+
+// Everything the departure input holds; the trip form keeps one of these.
+export type DepartureChoice = DepartureSelection & {
+  mode: DepartureMode
+}

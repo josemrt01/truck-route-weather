@@ -3,10 +3,12 @@ import { getTripPlan } from '../api/tripPlanApi'
 import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '../config/checkpointConfig'
 import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
 import { DEFAULT_TRUCK_WEIGHT_LB } from '../config/truckConfig'
-import { getDateTimeLocalValue } from '../lib/dateTime'
+import { buildDepartureIso, getFirstDepartureSelection } from '../lib/departureOptions'
 import { getRequiredFieldErrors } from '../lib/tripFormValidation'
 import { buildTripPlanRequest } from '../lib/tripPlanRequest'
+import { DepartureMode, type DepartureChoice } from '../types/departure'
 import { TripPlanError, TripPlanField, type FieldErrors, type LonLat, type Place, type TripPlan } from '../types/tripPlan'
+import { DepartureInput } from './DepartureInput'
 import { FormField } from './FormField'
 import { PlaceSearchInput } from './PlaceSearchInput'
 
@@ -24,8 +26,12 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
   // Coordinates of the picked suggestion; null while the text is typed by hand.
   const [originPoint, setOriginPoint] = useState<LonLat | null>(null)
   const [destinationPoint, setDestinationPoint] = useState<LonLat | null>(null)
-  // Starts at the current local time; useState runs this function only on the first render.
-  const [departureLocal, setDepartureLocal] = useState(() => getDateTimeLocalValue(new Date()))
+  // Starts at "Leave now"; the day and time are ready for when the user presses "Depart at".
+  // useState runs this function only on the first render.
+  const [departureChoice, setDepartureChoice] = useState<DepartureChoice>(() => ({
+    mode: DepartureMode.NOW,
+    ...getFirstDepartureSelection(new Date()),
+  }))
   const [spacingMi, setSpacingMi] = useState<number>(DEFAULT_CHECKPOINT_SPACING_MI)
   // Kept as the typed text, so clearing the box while editing doesn't turn into NaN.
   const [weightText, setWeightText] = useState(String(DEFAULT_TRUCK_WEIGHT_LB))
@@ -41,11 +47,10 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     setGeneralError(null)
 
     // Blank required fields are caught here, so every message shows at once and no request is sent.
-    // The spacing select always has a value, so it isn't checked.
+    // The departure and spacing inputs always have a value, so they aren't checked.
     const requiredFieldErrors = getRequiredFieldErrors([
       { field: TripPlanField.ORIGIN, text: origin },
       { field: TripPlanField.DESTINATION, text: destination },
-      { field: TripPlanField.DEPARTURE, text: departureLocal },
       { field: TripPlanField.WEIGHT_LB, text: weightText },
     ])
     if (Object.keys(requiredFieldErrors).length > 0) {
@@ -65,7 +70,13 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
           originPoint,
           destination,
           destinationPoint,
-          departureLocal,
+          // "Leave now" means the moment Plan route is pressed.
+          departureIso: buildDepartureIso(
+            departureChoice.mode,
+            departureChoice.dayValue,
+            departureChoice.timeValue,
+            new Date(),
+          ),
           spacingMi,
           weightLb,
         }),
@@ -179,18 +190,14 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
         </FormField>
 
         <FormField id="departure-input" label="Departure" isRequired error={getFieldError(TripPlanField.DEPARTURE)}>
-          {/* The browser shows a date and time picker in the user's local time. */}
-          <input
+          <DepartureInput
             id="departure-input"
-            type="datetime-local"
-            value={departureLocal}
-            aria-invalid={Boolean(getFieldError(TripPlanField.DEPARTURE))}
-            aria-required
-            onChange={(event) => {
-              setDepartureLocal(event.target.value)
+            choice={departureChoice}
+            isInvalid={Boolean(getFieldError(TripPlanField.DEPARTURE))}
+            onChoiceChange={(choice) => {
+              setDepartureChoice(choice)
               clearErrorFor(TripPlanField.DEPARTURE)
             }}
-            className={FORM_CONTROL_CLASS_NAME}
           />
         </FormField>
 

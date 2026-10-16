@@ -7,7 +7,7 @@ const typedValues: TripFormValues = {
   originPoint: null,
   destination: 'Houston, TX',
   destinationPoint: null,
-  departureLocal: '2026-10-13T08:00',
+  departureIso: '2026-10-13T13:00:00.000Z',
   spacingMi: 25,
   weightLb: 45_000,
 }

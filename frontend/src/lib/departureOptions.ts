@@ -8,8 +8,8 @@ const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 // Minutes in one day; the time list runs from 00:00 up to (not including) this.
 const MINUTES_PER_DAY = 24 * 60
 
-// Short weekday name, e.g. "Sat"; used for the day labels after Tomorrow.
-const WEEKDAY_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'short' })
+// Day as the date button shows it after Tomorrow, e.g. "Sat, Oct 17".
+const DAY_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
 // Time as the list shows it, e.g. "8:15 AM".
 const TIME_FORMAT = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' })
@@ -87,15 +87,28 @@ export function buildDepartureIso(mode: DepartureMode, dayValue: string, timeVal
   return convertDateTimeLocalToIso(`${dayValue}T${timeValue}`)
 }
 
-// "2026-10-17": the date part of the local "YYYY-MM-DDTHH:mm" text.
-function getDayValue(date: Date): string {
+// "2026-10-17": the date part of the local "YYYY-MM-DDTHH:mm" text; the calendar gives Dates, the form keeps these.
+export function getDayValue(date: Date): string {
   return getDateTimeLocalValue(date).split('T')[0]
+}
+
+// Local midnight of a "YYYY-MM-DD" day; text without a timezone offset is read as local time.
+export function getDateFromDayValue(dayValue: string): Date {
+  return new Date(`${dayValue}T00:00`)
+}
+
+// True when both "YYYY-MM-DD" days fall in the same month; the calendar hides its month arrows then,
+// because there is no other month to go to.
+export function areInSameMonth(firstDayValue: string, lastDayValue: string): boolean {
+  const firstDate = getDateFromDayValue(firstDayValue)
+  const lastDate = getDateFromDayValue(lastDayValue)
+
+  return firstDate.getFullYear() === lastDate.getFullYear() && firstDate.getMonth() === lastDate.getMonth()
 }
 
 function getDayLabel(date: Date, dayOffset: number): string {
   if (dayOffset === 0) return 'Today'
   if (dayOffset === 1) return 'Tomorrow'
 
-  // "Sat 17"
-  return `${WEEKDAY_FORMAT.format(date)} ${date.getDate()}`
+  return DAY_FORMAT.format(date)
 }

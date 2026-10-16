@@ -1,5 +1,4 @@
 import type { LonLat, TripPlanRequest } from '../types/tripPlan'
-import { convertDateTimeLocalToIso } from './dateTime'
 
 // What the trip form holds when the user submits it.
 export type TripFormValues = {
@@ -8,8 +7,8 @@ export type TripFormValues = {
   originPoint: LonLat | null
   destination: string
   destinationPoint: LonLat | null
-  // "YYYY-MM-DDTHH:mm" in the browser's local time, from the datetime-local input.
-  departureLocal: string
+  // ISO time in UTC, from buildDepartureIso.
+  departureIso: string
   spacingMi: number
   weightLb: number
 }
@@ -18,7 +17,7 @@ export function buildTripPlanRequest(values: TripFormValues): TripPlanRequest {
   const request: TripPlanRequest = {
     origin: values.origin.trim(),
     destination: values.destination.trim(),
-    departure: convertDateTimeLocalToIso(values.departureLocal),
+    departure: values.departureIso,
     spacing_mi: values.spacingMi,
     weight_lb: values.weightLb,
   }

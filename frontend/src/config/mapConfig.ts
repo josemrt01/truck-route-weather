@@ -153,8 +153,13 @@ export const FIT_ANIMATION_MS = 1000
 // left clears the side panel (448px, lg:w-[28rem] in App) plus 100px, bottom clears the forecast card; used by MapView.
 export const ROUTE_FIT_PADDING = { top: 100, right: 100, bottom: 280, left: 548 }
 
-// Same as ROUTE_FIT_PADDING on narrow screens, where the panel sits above the map; used by MapView.
-export const ROUTE_FIT_PADDING_NARROW = { top: 60, right: 40, bottom: 280, left: 40 }
+// Top and side padding when zooming to a route on narrow screens; the bottom comes from the drawer's height
+// (getRouteFitPadding).
+export const ROUTE_FIT_PADDING_NARROW_SIDES = { top: 60, right: 40, left: 40 }
+
+// Smallest map height in pixels left for the route when the drawer and card cover the rest (short landscape
+// phones); used by getRouteFitPadding.
+export const MIN_ROUTE_FIT_HEIGHT = 120
 
 // Closest zoom when fitting a route, so short trips keep their surroundings in view; used by MapView.
 export const MAX_ROUTE_FIT_ZOOM = 9

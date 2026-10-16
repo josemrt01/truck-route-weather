@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Map, { Layer, NavigationControl, Popup, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre'
+import Map, { AttributionControl, Layer, NavigationControl, Popup, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre'
 import { LngLatBounds } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import {
@@ -21,11 +21,9 @@ import {
   OTHER_ROUTE_WIDTH,
   OTHER_ROUTES_LAYER_ID,
   OTHER_ROUTES_SOURCE_ID,
-  ROUTE_FIT_PADDING,
   ROUTE_CASING_COLOR,
   ROUTE_CASING_LAYER_ID,
   ROUTE_CASING_WIDTH,
-  ROUTE_FIT_PADDING_NARROW,
   ROUTE_LINE_WIDTH,
   ROUTE_SEGMENT_COLOR_EXPRESSION,
   ROUTE_SEGMENT_HIGHLIGHT_LAYER_ID,
@@ -42,6 +40,8 @@ import {
   getHeatmapRadiusExpression,
 } from '../lib/heatmapGeometry'
 import { getForecastHourTime } from '../lib/dateTime'
+import { getRouteFitPadding } from '../lib/routeFitPadding'
+import { useIsWideScreen } from '../lib/useIsWideScreen'
 import { buildCheckpointPoints, buildOtherRouteLines, buildRouteSegments, getTruckPosition } from '../lib/routeGeometry'
 import { getRouteById } from '../lib/tripPlanRoutes'
 import { RouteEndpoint } from '../types/routeEndpoint'
@@ -96,6 +96,8 @@ export function MapView({
       padding: window.matchMedia(NARROW_SCREEN_QUERY).matches ? INITIAL_FIT_PADDING_NARROW : INITIAL_FIT_PADDING,
     },
   }))
+  // The map credits sit top-left on narrow screens, where the drawer covers the bottom of the map.
+  const isWideScreen = useIsWideScreen()
   // Handle to the MapLibre map, so we can move its camera.
   const mapRef = useRef<MapRef>(null)
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null)
@@ -128,9 +130,9 @@ export function MapView({
   useEffect(() => {
     if (!tripPlan || !mapRef.current) return
 
-    // On narrow screens the panel sits above the map, so the route needs no extra space on the left.
-    const isNarrowScreen = window.matchMedia(NARROW_SCREEN_QUERY).matches
-    const padding = isNarrowScreen ? ROUTE_FIT_PADDING_NARROW : ROUTE_FIT_PADDING
+    // Checked here instead of using the hook's value, so the camera moves only when the plan changes.
+    const isWideScreenNow = !window.matchMedia(NARROW_SCREEN_QUERY).matches
+    const padding = getRouteFitPadding(isWideScreenNow, window.innerHeight)
 
     // Start a box at the first point, then grow it until it contains every point of every route.
     const firstPoint = tripPlan.routes[0].geometry[0]
@@ -186,6 +188,8 @@ export function MapView({
       mapStyle={MAP_STYLE_URL}
       style={{ width: '100%', height: '100%' }}
       interactiveLayerIds={INTERACTIVE_LAYER_IDS}
+      // Our own AttributionControl below, so its corner can change with the layout.
+      attributionControl={false}
       onLoad={handleLoad}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHoveredSegmentIndex(null)}
@@ -195,6 +199,13 @@ export function MapView({
     >
       {/* Zoom +/- buttons and compass. */}
       <NavigationControl position="top-right" />
+
+      {/* The key makes React add a new control when the corner changes; MapLibre can't move an existing one. */}
+      <AttributionControl
+        key={isWideScreen ? 'wide' : 'narrow'}
+        position={isWideScreen ? 'bottom-right' : 'top-left'}
+        compact={!isWideScreen}
+      />
 
       {/* Layers draw in the order listed: gray other routes, then the selected route's dark outline,
           risk-colored stretches and highlight, then the dots on top; all under the map's place and road names. */}

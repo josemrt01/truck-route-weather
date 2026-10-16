@@ -18,7 +18,7 @@ type HeatmapResult = {
 }
 
 function App() {
-  const [status, setStatus] = useState<BackendStatus>(BackendStatus.CHECKING)
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>(BackendStatus.CHECKING)
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null)
   // The route drawn with risk colors; starts as the recommended one, the route cards change it.
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
@@ -33,7 +33,7 @@ function App() {
 
   // Check the backend once, when the page first loads.
   useEffect(() => {
-    getBackendStatus().then(setStatus)
+    getBackendStatus().then(setBackendStatus)
   }, [])
 
   function handleTripPlanned(newTripPlan: TripPlan, weightLb: number) {
@@ -75,7 +75,12 @@ function App() {
 
       <aside className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto bg-surface p-4 text-sm md:absolute md:top-3 md:left-3 md:max-h-[calc(100vh-24px)] md:w-80 md:overflow-y-auto md:rounded-lg md:shadow-floating-panel">
         <h1 className="text-lg font-bold">Truck Route Weather</h1>
-        <span className="text-muted-foreground">Backend: {status}</span>
+        {/* Silent while the backend is fine; only a problem is worth the user's attention. */}
+        {backendStatus === BackendStatus.UNREACHABLE && (
+          <p className="text-error" role="alert">
+            Can't reach the server. Try again in a minute.
+          </p>
+        )}
 
         <TripForm onTripPlanned={handleTripPlanned} />
 

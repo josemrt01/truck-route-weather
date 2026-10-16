@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react'
+import { Drawer } from '@base-ui/react/drawer'
+import { useEffect, useState, type ElementType } from 'react'
 import { getBackendStatus } from './api/healthApi'
 import { getHeatmap } from './api/heatmapApi'
 import { ForecastSlider } from './components/ForecastSlider'
 import { MapView } from './components/MapView'
 import { PanelContent } from './components/PanelContent'
+import { TripDrawer } from './components/TripDrawer'
+import { getDrawerSummaryText } from './lib/drawerSummary'
 import { getRouteById, getRouteOptionName } from './lib/tripPlanRoutes'
+import { useIsWideScreen } from './lib/useIsWideScreen'
 import { BackendStatus } from './types/backendStatus'
+import { DrawerStop } from './types/drawerStop'
 import { HeatmapStatus, type Heatmap } from './types/heatmap'
 import { PanelView } from './types/panelView'
 import type { TripPlan, TripSettings } from './types/tripPlan'
@@ -33,6 +38,10 @@ function App() {
   const [forecastHour, setForecastHour] = useState(0)
   // The truck shows only after the user plays or drags the forecast slider; each new plan hides it again.
   const [isTruckVisible, setIsTruckVisible] = useState(false)
+  // Where the drawer rests on narrow screens; starts full, with the form.
+  const [drawerStop, setDrawerStop] = useState<DrawerStop>(DrawerStop.FULL)
+  // Side panel from 1024px up, drawer below.
+  const isWideScreen = useIsWideScreen()
 
   const selectedRoute = tripPlan && selectedRouteId ? getRouteById(tripPlan, selectedRouteId) : null
 
@@ -48,6 +57,8 @@ function App() {
     setTripPlan(newTripPlan)
     setTripSettings(newTripSettings)
     setPanelView(PanelView.RESULTS)
+    // Narrow screens: half the screen, so the cards and the routes are both visible.
+    setDrawerStop(DrawerStop.MIDDLE)
     setSelectedRouteId(newTripPlan.recommended_route_id)
     setHeatmapResult({ tripPlan: newTripPlan, status: HeatmapStatus.LOADING, heatmap: null })
     // Each new plan starts at "now", without the truck.
@@ -69,14 +80,43 @@ function App() {
     setForecastHour(0)
     setIsTruckVisible(false)
     setPanelView(PanelView.FORM)
+    setDrawerStop(DrawerStop.FULL)
     setFormResetCount((previousCount) => previousCount + 1)
   }
 
+  // "Edit": back to the form, with the drawer full on narrow screens.
+  function handleShowForm() {
+    setPanelView(PanelView.FORM)
+    setDrawerStop(DrawerStop.FULL)
+  }
+
+  // The same panel content in both layouts; only its container changes.
+  function renderPanelContent(scrollArea: ElementType) {
+    return (
+      <PanelContent
+        panelView={panelView}
+        backendStatus={backendStatus}
+        tripPlan={tripPlan}
+        tripSettings={tripSettings}
+        selectedRouteId={selectedRouteId}
+        formResetCount={formResetCount}
+        onTripPlanned={handleTripPlanned}
+        onClearTrip={handleClearTrip}
+        onShowForm={handleShowForm}
+        onShowResults={() => setPanelView(PanelView.RESULTS)}
+        onSelectRoute={setSelectedRouteId}
+        ScrollArea={scrollArea}
+      />
+    )
+  }
+
   return (
-    // Below lg (1024px): map on top, panel below (at most half the screen, scrolling); Task 3 replaces this with
-    // the drawer. From lg up: map fills the screen, panel is a full-height sidebar on the left edge.
-    <main className="flex h-dvh flex-col lg:relative lg:block">
-      <div className="relative min-h-0 flex-1 lg:absolute lg:inset-0">
+    // The map fills the screen in both layouts; the panel is a left sidebar from 1024px up, a bottom drawer below.
+    <main className="relative h-dvh overflow-hidden">
+      {/* No visible app title; screen readers still get the page's name. */}
+      <h1 className="sr-only">Truck Route Weather</h1>
+
+      <div className="absolute inset-0">
         <MapView
           tripPlan={tripPlan}
           selectedRouteId={selectedRouteId}
@@ -84,7 +124,8 @@ function App() {
           forecastHour={forecastHour}
           isTruckVisible={isTruckVisible}
         />
-        {tripPlan && selectedRoute && (
+        {/* Narrow screens get the compact card on the drawer instead (card 9.4). */}
+        {isWideScreen && tripPlan && selectedRoute && (
           <ForecastSlider
             hour={forecastHour}
             onHourChange={setForecastHour}
@@ -98,25 +139,16 @@ function App() {
         )}
       </div>
 
-      {/* lg:w-[28rem] (448px) must match the left value of ROUTE_FIT_PADDING in mapConfig.ts. */}
-      <aside className="flex max-h-[50vh] flex-col bg-panel text-base lg:absolute lg:top-0 lg:left-0 lg:h-dvh lg:max-h-none lg:w-[28rem] lg:shadow-floating-panel">
-        {/* No visible app title; screen readers still get the page's name. */}
-        <h1 className="sr-only">Truck Route Weather</h1>
-
-        <PanelContent
-          panelView={panelView}
-          backendStatus={backendStatus}
-          tripPlan={tripPlan}
-          tripSettings={tripSettings}
-          selectedRouteId={selectedRouteId}
-          formResetCount={formResetCount}
-          onTripPlanned={handleTripPlanned}
-          onClearTrip={handleClearTrip}
-          onShowForm={() => setPanelView(PanelView.FORM)}
-          onShowResults={() => setPanelView(PanelView.RESULTS)}
-          onSelectRoute={setSelectedRouteId}
-        />
-      </aside>
+      {isWideScreen ? (
+        // w-[28rem] (448px) must match the left value of ROUTE_FIT_PADDING in mapConfig.ts.
+        <aside className="absolute top-0 left-0 flex h-dvh w-[28rem] flex-col bg-panel text-base shadow-floating-panel">
+          {renderPanelContent('div')}
+        </aside>
+      ) : (
+        <TripDrawer stop={drawerStop} onStopChange={setDrawerStop} summaryText={getDrawerSummaryText(selectedRoute)}>
+          {renderPanelContent(Drawer.Content)}
+        </TripDrawer>
+      )}
     </main>
   )
 }

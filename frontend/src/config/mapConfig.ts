@@ -39,7 +39,7 @@ export const CONTIGUOUS_US_BOUNDS: [[number, number], [number, number]] = [
   [-66.9, 49.4],
 ]
 
-// Pixels kept around the US on the first view; left clears the side panel (448px, md:w-[28rem] in App)
+// Pixels kept around the US on the first view; left clears the side panel (448px, lg:w-[28rem] in App)
 // so the country is centered in the part of the map you can see; used by MapView.
 export const INITIAL_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 488 }
 
@@ -149,11 +149,8 @@ export const SEGMENT_POPUP_OFFSET = 10
 // Milliseconds the camera takes to fly to a new route; used by MapView.
 export const FIT_ANIMATION_MS = 1000
 
-// Screens narrower than 768px, below Tailwind's md breakpoint; used by MapView to pick the fit padding.
-export const NARROW_SCREEN_QUERY = '(max-width: 767px)'
-
 // Pixels kept around the route when zooming to it, so the start and end pins aren't at the edge;
-// left clears the side panel (448px, md:w-[28rem] in App) plus 100px, bottom clears the forecast card; used by MapView.
+// left clears the side panel (448px, lg:w-[28rem] in App) plus 100px, bottom clears the forecast card; used by MapView.
 export const ROUTE_FIT_PADDING = { top: 100, right: 100, bottom: 280, left: 548 }
 
 // Same as ROUTE_FIT_PADDING on narrow screens, where the panel sits above the map; used by MapView.

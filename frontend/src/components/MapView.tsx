@@ -17,7 +17,6 @@ import {
   MAP_LABEL_LAYER_ID,
   MAP_STYLE_URL,
   MAX_ROUTE_FIT_ZOOM,
-  NARROW_SCREEN_QUERY,
   OTHER_ROUTE_COLOR,
   OTHER_ROUTE_WIDTH,
   OTHER_ROUTES_LAYER_ID,
@@ -35,6 +34,7 @@ import {
   ROUTE_SEGMENT_SOURCE_ID,
   SEGMENT_POPUP_OFFSET,
 } from '../config/mapConfig'
+import { NARROW_SCREEN_QUERY } from '../config/layoutConfig'
 import {
   buildHeatmapPoints,
   getHeatmapColorExpression,

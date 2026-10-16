@@ -14,7 +14,7 @@ type TripSummaryProps = {
 // Edit and close live in the toolbar above it.
 export function TripSummary({ tripPlan, tripSettings }: TripSummaryProps) {
   return (
-    <section className="flex shrink-0 flex-col gap-3 border-b border-border bg-surface px-4 py-4 md:px-6">
+    <section className="flex shrink-0 flex-col gap-3 border-b border-border bg-surface px-4 py-4 lg:px-6">
       <div className="flex items-stretch gap-3">
         {/* Start circle, dotted line, end pin: the same picture as the form and the map. */}
         <div className="flex flex-col items-center py-1.5" aria-hidden="true">

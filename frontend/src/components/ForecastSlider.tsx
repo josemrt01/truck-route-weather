@@ -77,7 +77,7 @@ export function ForecastSlider({
 
   return (
     // Centered over the map, clear of the side panel (28rem) and high enough to leave MapLibre's credits visible.
-    <div className="pointer-events-none absolute inset-x-3 bottom-10 flex justify-center md:right-6 md:left-[29.5rem]">
+    <div className="pointer-events-none absolute inset-x-3 bottom-10 flex justify-center lg:right-6 lg:left-[29.5rem]">
       <div className="pointer-events-auto flex w-full max-w-2xl flex-col gap-3 rounded-2xl bg-surface p-4 text-base shadow-floating-panel">
         <div className="flex items-start justify-between gap-3">
           <span className="flex flex-col">

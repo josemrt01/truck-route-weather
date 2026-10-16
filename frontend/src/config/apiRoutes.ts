@@ -6,4 +6,6 @@ export const API_ROUTES = {
   TRIP_PLANS: '/api/trip-plans',
   // Risk level for every corridor point and forecast hour; used by getHeatmap.
   HEATMAP: '/api/heatmap',
+  // Places matching typed text, for the origin and destination suggestions; used by searchPlaces.
+  PLACES: '/api/places',
 } as const

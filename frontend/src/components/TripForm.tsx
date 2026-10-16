@@ -4,8 +4,9 @@ import { CHECKPOINT_SPACING_OPTIONS_MI, DEFAULT_CHECKPOINT_SPACING_MI } from '..
 import { FORM_CONTROL_CLASS_NAME } from '../config/formStyles'
 import { DEFAULT_TRUCK_WEIGHT_LB } from '../config/truckConfig'
 import { getDateTimeLocalValue } from '../lib/dateTime'
+import { getMissingPlaceErrors } from '../lib/tripFormValidation'
 import { buildTripPlanRequest } from '../lib/tripPlanRequest'
-import { TripPlanError, TripPlanField, type LonLat, type Place, type TripPlan } from '../types/tripPlan'
+import { TripPlanError, TripPlanField, type FieldErrors, type LonLat, type Place, type TripPlan } from '../types/tripPlan'
 import { FormField } from './FormField'
 import { PlaceSearchInput } from './PlaceSearchInput'
 
@@ -29,12 +30,23 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
   // Kept as the typed text, so clearing the box while editing doesn't turn into NaN.
   const [weightText, setWeightText] = useState(String(DEFAULT_TRUCK_WEIGHT_LB))
   const [isPlanning, setIsPlanning] = useState(false)
-  const [error, setError] = useState<TripPlanError | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  // Error not tied to one input (no road, service down, network); shown under the button.
+  const [generalError, setGeneralError] = useState<string | null>(null)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     // Stop the browser from reloading the page on submit.
     event.preventDefault()
-    setError(null)
+    setFieldErrors({})
+    setGeneralError(null)
+
+    // Blank places are caught here, so both messages show at once and no request is sent.
+    const missingPlaceErrors = getMissingPlaceErrors(origin, destination)
+    if (Object.keys(missingPlaceErrors).length > 0) {
+      setFieldErrors(missingPlaceErrors)
+      return
+    }
+
     setIsPlanning(true)
 
     // An empty box becomes 0, which the backend rejects with a message under the field.
@@ -55,21 +67,33 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
       onTripPlanned(tripPlan, weightLb)
     } catch (caughtError) {
       // getTripPlan only throws TripPlanError; anything else is an unexpected bug in our own code.
-      const unexpectedError = new TripPlanError('Something went wrong. Please try again.', null)
-      setError(caughtError instanceof TripPlanError ? caughtError : unexpectedError)
+      if (!(caughtError instanceof TripPlanError)) {
+        setGeneralError('Something went wrong. Please try again.')
+      } else if (caughtError.field !== null && FORM_FIELDS.includes(caughtError.field)) {
+        setFieldErrors({ [caughtError.field]: caughtError.message })
+      } else {
+        // No field, or a field this form has no input for.
+        setGeneralError(caughtError.message)
+      }
     } finally {
       setIsPlanning(false)
     }
   }
 
-  // The user is changing this field, so its old error no longer applies.
+  // The user is changing this field, so its old error no longer applies; other fields keep theirs.
   function clearErrorFor(field: TripPlanField) {
-    if (error?.field === field) setError(null)
+    setFieldErrors((previousErrors) => {
+      if (!(field in previousErrors)) return previousErrors
+
+      const remainingErrors = { ...previousErrors }
+      delete remainingErrors[field]
+      return remainingErrors
+    })
   }
 
-  // The error message for one field, or undefined when the error belongs elsewhere.
+  // The error message for one field, or undefined when it has none.
   function getFieldError(field: TripPlanField): string | undefined {
-    return error?.field === field ? error.message : undefined
+    return fieldErrors[field]
   }
 
   // A place error can be on its text or on its picked point; both show under the same input.
@@ -105,9 +129,6 @@ export function TripForm({ onTripPlanned }: TripFormProps) {
     clearErrorFor(TripPlanField.DESTINATION)
     clearErrorFor(TripPlanField.DESTINATION_POINT)
   }
-
-  // Errors with no field, or on a field this form has no input for, show under the button.
-  const generalError = error && (error.field === null || !FORM_FIELDS.includes(error.field)) ? error.message : null
 
   return (
     <form onSubmit={handleSubmit}>

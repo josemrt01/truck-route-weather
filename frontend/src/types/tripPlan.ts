@@ -103,6 +103,9 @@ export const TripPlanField = {
 
 export type TripPlanField = (typeof TripPlanField)[keyof typeof TripPlanField]
 
+// Error message per form field; a field without a key has no error; used by the trip form.
+export type FieldErrors = Partial<Record<TripPlanField, string>>
+
 // Error body the backend sends; built by exception_handler.py.
 export type ApiErrorResponse = {
   error: string

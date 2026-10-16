@@ -14,8 +14,8 @@ type ForecastSliderProps = {
   // null while loading or after a failure; the slider is disabled then.
   heatmap: Heatmap | null
   heatmapStatus: HeatmapStatus | null
-  // The selected route's trip, marked as a band under the slider: its id, departure and arrival (ISO, UTC).
-  routeId: string
+  // The selected route's trip, marked as a band under the slider: its name, departure and arrival (ISO, UTC).
+  routeName: string
   departureUtc: string
   arrivalUtc: string
 }
@@ -26,7 +26,7 @@ export function ForecastSlider({
   onHourChange,
   heatmap,
   heatmapStatus,
-  routeId,
+  routeName,
   departureUtc,
   arrivalUtc,
 }: ForecastSliderProps) {
@@ -107,7 +107,7 @@ export function ForecastSlider({
 
       {heatmap && (
         <span className="text-xs text-muted-foreground">
-          {getTripLabel(routeId, tripHourRange, lastHour)}
+          {getTripLabel(routeName, tripHourRange, lastHour)}
         </span>
       )}
 
@@ -128,11 +128,11 @@ function getStatusLabel(heatmap: Heatmap | null, heatmapStatus: HeatmapStatus | 
   return formatForecastHourLabel(heatmap.start_hour_utc, hour)
 }
 
-// Text under the slider saying when the selected route's truck is on the road, e.g. "Route A on the road: +0h → +3.5h".
-function getTripLabel(routeId: string, tripHourRange: TripHourRange | null, lastHour: number): string {
+// Text under the slider saying when the selected route's truck is on the road, e.g. "via I-45 on the road: +0h → +3.5h".
+function getTripLabel(routeName: string, tripHourRange: TripHourRange | null, lastHour: number): string {
   if (tripHourRange === null) {
-    return `Route ${routeId} starts after +${lastHour}h`
+    return `${routeName} starts after +${lastHour}h`
   }
 
-  return `Route ${routeId} on the road: ${formatHourOffset(tripHourRange.startHour)} → ${formatHourOffset(tripHourRange.endHour)}`
+  return `${routeName} on the road: ${formatHourOffset(tripHourRange.startHour)} → ${formatHourOffset(tripHourRange.endHour)}`
 }

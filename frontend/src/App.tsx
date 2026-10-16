@@ -88,7 +88,7 @@ function App() {
             onHourChange={setForecastHour}
             heatmap={currentHeatmap?.heatmap ?? null}
             heatmapStatus={currentHeatmap?.status ?? null}
-            routeId={selectedRoute.id}
+            routeName={selectedRoute.name}
             departureUtc={tripPlan.departure_utc}
             arrivalUtc={selectedRoute.arrival_utc}
           />

@@ -25,6 +25,10 @@
   --color-primary: #0969da;
   /* Error text and invalid input borders; used as text-error and border-error. */
   --color-error: #d1242f;
+  /* Green text for good news ("Recommended"); used as text-success on route cards. */
+  --color-success: #1a7f37;
+  /* Soft green background behind success text; used as bg-success-soft on route cards. */
+  --color-success-soft: #dafbe1;
   /* Highlighted suggestion row; used as bg-accent in PlaceSearchInput. */
   --color-accent: #ddf4ff;
 

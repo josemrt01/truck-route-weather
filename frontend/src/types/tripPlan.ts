@@ -53,8 +53,10 @@ export type TripPlanRequest = {
 
 // One route option in the plan; matches _serialize_route in the backend.
 export type RoutePlan = {
-  // "A", "B" or "C", from fastest to slowest.
+  // "A", "B" or "C", from fastest to slowest; used to select routes, never shown.
   id: string
+  // What the user sees, e.g. "via I-45" (or "Route 2" when no road name is left).
+  name: string
   // Position in the recommendation; 1 is the recommended route.
   rank: number
   geometry: LonLat[]

@@ -1,3 +1,4 @@
+import { getFastestRouteId } from '../lib/routeRisk'
 import { getRoutesInRankOrder } from '../lib/tripPlanRoutes'
 import type { TripPlan } from '../types/tripPlan'
 import { RouteCard } from './RouteCard'
@@ -11,8 +12,10 @@ type RouteCardsProps = {
 
 // The route options, recommended first, with the plan's warning and notes above them.
 export function RouteCards({ tripPlan, selectedRouteId, onSelectRoute }: RouteCardsProps) {
+  const fastestRouteId = getFastestRouteId(tripPlan.routes)
+
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-3">
       {/* Every route crosses No Travel: the most important message, so it comes first. */}
       {tripPlan.warning && (
         <p className="rounded-md border border-error p-2 text-error" role="alert">
@@ -32,6 +35,7 @@ export function RouteCards({ tripPlan, selectedRouteId, onSelectRoute }: RouteCa
           key={route.id}
           route={route}
           isRecommended={route.id === tripPlan.recommended_route_id}
+          isFastest={route.id === fastestRouteId}
           reason={tripPlan.reason}
           isSelected={route.id === selectedRouteId}
           onSelect={() => onSelectRoute(route.id)}
